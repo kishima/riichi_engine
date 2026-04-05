@@ -35,10 +35,14 @@ host app から `RiichiEngine::API` を呼ぶだけで、麻雀の完全なド�
 
 ## インストール
 
-vendor gem として組み込む場合は Gemfile に追加します：
+```bash
+bundle add riichi_engine
+```
+
+または Gemfile に直接追加：
 
 ```ruby
-gem "riichi_engine", path: "vendor/gems/riichi_engine"
+gem "riichi_engine"
 ```
 
 ---
