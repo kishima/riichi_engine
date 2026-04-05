@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -27,14 +25,7 @@ jobs:
       - name: Build gem
         run: gem build riichi_engine.gemspec
 
-      - name: Configure RubyGems credentials
-        run: |
-          mkdir -p ~/.gem
-          cat > ~/.gem/credentials <<CREDENTIALS
-          ---
-          :rubygems_api_key: ${RUBYGEMS_API_KEY}
-          CREDENTIALS
-          chmod 0600 ~/.gem/credentials
-
-      - name: Publish to RubyGems
-        run: gem push riichi_engine-*.gem
+      # gem push は手動で行う:
+      #   gem push riichi_engine-*.gem
+      # 事前に RubyGems へのログイン（gem signin）または
+      # ~/.gem/credentials への API キー設定が必要。

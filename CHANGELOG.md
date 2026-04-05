@@ -1,9 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 (2026-04-05)
 
-- Rename gem packaging from `mahjong_core` to `riichi_engine`
-- Move domain code under `vendor/gems/riichi_engine`
-- Add standalone gem test setup
-- Remove remaining ActiveSupport assumptions from pure Ruby paths
-- Document public API and host app boundary
+初回リリース
+
+### 機能
+
+- **局進行** — 自摸・打牌・リーチ・ポン・チー・カン（暗槓・加槓・大明槓）・九種九牌の処理
+- **和了判定** — 通常和了形・七対子・国士無双に対応
+- **役判定** — 一般役から役満まで全役対応（ダブル役満はルール設定で切り替え可）
+- **点数計算** — 符・翻計算、基本点・各プレイヤーへの支払い点算出、本場加算
+- **流局処理** — 荒牌流局・途中流局（四風連打・四家リーチ・三家和・四槓散了）、ノーテン罰符計算
+- **ゲーム進行** — 連荘・親流れ・オーラス終了条件・トビ判定・西入対応
+- **順位計算** — ウマ・オカを含む最終スコア算出
+- **CPU AI** — Easy / Normal / Hard の3段階
+- **状態の永続化** — `RoundState` の JSON シリアライズ・デシリアライズ

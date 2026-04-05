@@ -4,6 +4,11 @@ module Mahjong
     # Solid Cache に JSON シリアライズして保存する。
     # 実装詳細は D09: 局進行ステートマシン で行う。
     class RoundState
+    VALID_PHASES = %i[tsumo dahai naki_wait round_end].freeze
+    VALID_FUURO_TYPES = %i[chi pon daiminkan ankan kakan].freeze
+    VALID_PENDING_ACTION_KEYS = %i[type seat tile tiles].freeze
+    VALID_PENDING_ACTION_TYPES = %i[pon chi daiminkan ron_agari skip].freeze
+
     attr_accessor :bakaze, :kyoku, :honba, :kyoutaku, :oya_seat
     attr_accessor :hands, :fuuros, :kawas, :scores
     attr_accessor :wall, :wanpai, :dora_hyouji, :uradora_hyouji
@@ -101,8 +106,12 @@ module Mahjong
       state.hands = (data["hands"] || {}).transform_keys(&:to_i).transform_values { |tiles| State::Hand.from_array(tiles) }
       state.fuuros = (data["fuuros"] || {}).transform_keys(&:to_i).transform_values do |list|
         Array(list).map do |fuuro|
+          type_str = fuuro["type"].to_s
+          type_sym = VALID_FUURO_TYPES.find { |t| t.to_s == type_str }
+          raise Errors::EngineError, "invalid fuuro type: #{type_str.inspect}" unless type_sym
+
           State::Fuuro.new(
-            type: fuuro["type"].to_sym,
+            type: type_sym,
             tiles: Array(fuuro["tiles"]).map { Tiles::Tile.new(_1) },
             called_tile: fuuro["called_tile"] ? Tiles::Tile.new(fuuro["called_tile"]) : nil,
             from_seat: fuuro["from_seat"]
@@ -118,7 +127,12 @@ module Mahjong
       state.state_version = data["state_version"].to_i
       state.current_seat = data["current_seat"]
       state.junme = data["junme"]
-      state.phase = data["phase"]&.to_sym
+
+      phase_str = data["phase"].to_s
+      phase_sym = VALID_PHASES.find { |p| p.to_s == phase_str }
+      raise Errors::EngineError, "invalid phase: #{phase_str.inspect}" unless phase_sym
+
+      state.phase = phase_sym
       state.last_dahai = deserialize_last_dahai(data["last_dahai"])
       state.last_tsumo = data["last_tsumo"] ? Tiles::Tile.new(data["last_tsumo"]) : nil
       state.riichi_flags = symbolize_int_hash(data["riichi_flags"])
@@ -135,6 +149,8 @@ module Mahjong
       state.dojun_furiten_flags = symbolize_int_hash(data["dojun_furiten_flags"])
       state.riichi_furiten_flags = symbolize_int_hash(data["riichi_furiten_flags"])
       state
+    rescue JSON::ParserError, ArgumentError, TypeError, KeyError => e
+      raise Errors::EngineError, "RoundState の復元に失敗しました: #{e.message}"
     end
 
     def serialize_last_dahai
@@ -158,8 +174,16 @@ module Mahjong
         Array(actions).filter_map do |action|
           next unless action
 
-          action.to_h.transform_keys { |key| key.to_sym rescue key }.transform_values do |value|
-            value.is_a?(String) && value.match?(/\A[a-z_]+\z/) ? value.to_sym : value
+          action.to_h.each_with_object({}) do |(k, v), result|
+            key = VALID_PENDING_ACTION_KEYS.find { |s| s.to_s == k.to_s }
+            next unless key
+
+            result[key] = if key == :type
+              VALID_PENDING_ACTION_TYPES.find { |s| s.to_s == v.to_s } ||
+                raise(Errors::EngineError, "invalid pending action type: #{v.inspect}")
+            else
+              v
+            end
           end
         end
       end

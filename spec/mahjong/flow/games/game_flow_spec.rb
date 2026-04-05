@@ -133,6 +133,19 @@ RSpec.describe Mahjong::Flow::Games::GameFlow do
       expect(result).to be_game_end
       expect(result.reason).to eq(:all_last_oya_agari)
     end
+
+    it "RoundFlow 互換の Hash round_end_info でも連荘判定できる" do
+      snapshot = build_progress_snapshot(honba: 1, oya_index: 0)
+      info = { type: :tsumo_agari, winner_seat: 0, loser_seat: nil }
+
+      result = described_class.judge_next(progress_snapshot: snapshot, round_end_info: info, rule:)
+
+      expect(result).to be_next_round
+      expect(result.renchan).to be true
+      expect(result.next_oya_index).to eq(0)
+      expect(result.next_kyoku).to eq(1)
+      expect(result.next_honba).to eq(2)
+    end
   end
 
   describe ".calculate_final_result" do

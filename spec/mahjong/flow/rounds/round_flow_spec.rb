@@ -212,7 +212,46 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
     expect(flow_state.fuuros[0].last).to be_kakan
     expect(flow_state.hands[0].count).to eq(4)
     expect(flow_state.last_tsumo).to be_a(Mahjong::Tiles::Tile)
-    expect(flow_state.chankan_tile.to_s).to eq("5m")
+    expect(flow_state.chankan_tile).to be_nil
+  end
+
+  it "kakan 後に槍槓可能なら ron 待ちに入る" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "kakan-chankan-seed")
+    flow_state.phase = :dahai
+    flow_state.current_seat = 0
+    flow_state.hands[0] = Mahjong::State::Hand.new(tiles("5m 1p 2p 3p"))
+    flow_state.hands[1] = Mahjong::State::Hand.new(tiles("2m 3m 4m 5p 6p 7p 3s 4s 5s 6s 7s 8s 5m"))
+    flow_state.fuuros[0] = [
+      Mahjong::State::Fuuro.new(type: :pon, tiles: tiles("5m 5m 5m"), called_tile: Mahjong::Tiles::Tile.new("5m"), from_seat: 1)
+    ]
+
+    result = described_class.apply_action(state: flow_state, action: { type: :kakan, seat: 0, tile: "5m" }, rule:)
+
+    expect(result.events.first[:type]).to eq(:kakan)
+    expect(flow_state.phase).to eq(:naki_wait)
+    expect(flow_state.pending_actions[1]).to eq([{ type: :ron_agari }])
+    expect(flow_state.last_tsumo).to be_nil
+  end
+
+  it "槍槓が流れた kakan は嶺上牌を引いて続行する" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "kakan-finalize-seed")
+    flow_state.phase = :dahai
+    flow_state.current_seat = 0
+    flow_state.hands[0] = Mahjong::State::Hand.new(tiles("5m 1p 2p 3p"))
+    flow_state.hands[1] = Mahjong::State::Hand.new(tiles("2m 3m 4m 5p 6p 7p 3s 4s 5s 6s 7s 8s 5m"))
+    flow_state.fuuros[0] = [
+      Mahjong::State::Fuuro.new(type: :pon, tiles: tiles("5m 5m 5m"), called_tile: Mahjong::Tiles::Tile.new("5m"), from_seat: 1)
+    ]
+
+    described_class.apply_action(state: flow_state, action: { type: :kakan, seat: 0, tile: "5m" }, rule:)
+    described_class.apply_action(state: flow_state, action: { type: :skip, seat: 1 }, rule:)
+
+    expect(flow_state.phase).to eq(:dahai)
+    expect(flow_state.current_seat).to eq(0)
+    expect(flow_state.last_tsumo).to be_a(Mahjong::Tiles::Tile)
+    expect(flow_state.rinshan_flag).to be true
+    expect(flow_state.chankan_tile).to be_nil
+    expect(flow_state.pending_actions).to eq({})
   end
 
   it "tsumo_agari で round_end になる" do
@@ -263,6 +302,37 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
     expect(result.events.first[:type]).to eq(:pon)
     expect(flow_state.current_seat).to eq(1)
     expect(flow_state.phase).to eq(:dahai)
+  end
+
+  it "役なしロン見送りでは同巡フリテンを付けない" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "skip-no-yaku-seed")
+    flow_state.phase = :naki_wait
+    flow_state.current_seat = 0
+    flow_state.oya_seat = 0
+    flow_state.last_dahai = { seat: 0, tile: Mahjong::Tiles::Tile.new("7z") }
+    flow_state.hands[2] = Mahjong::State::Hand.new(tiles("1m 2m 3m 4m 5m 6m 7p 8p 9p 3s 4s 5s 7z"))
+    flow_state.fuuros[2] = []
+    flow_state.pending_actions = { 2 => [{ type: :ron_agari }] }
+
+    described_class.apply_action(state: flow_state, action: { type: :skip, seat: 2 }, rule:)
+
+    expect(flow_state.dojun_furiten_flags[2]).to be false
+    expect(flow_state.riichi_furiten_flags[2]).to be false
+  end
+
+  it "嶺上フラグは次の通常打牌でクリアされる" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "rinshan-clear-seed")
+    flow_state.phase = :dahai
+    flow_state.current_seat = 0
+    flow_state.hands[0] = Mahjong::State::Hand.new(tiles("1m 2m 3m"))
+    flow_state.last_tsumo = Mahjong::Tiles::Tile.new("3m")
+    flow_state.rinshan_flag = true
+    flow_state.chankan_tile = Mahjong::Tiles::Tile.new("5m")
+
+    described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "3m" }, rule:)
+
+    expect(flow_state.rinshan_flag).to be false
+    expect(flow_state.chankan_tile).to be_nil
   end
 
   it "壁が尽きている場合の tsumo は荒牌平局になる" do

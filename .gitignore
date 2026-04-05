@@ -2,3 +2,5 @@
 /.rspec_status
 /coverage/
 /tmp/
+/Gemfile.lock
+/*.gem

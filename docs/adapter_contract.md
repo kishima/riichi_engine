@@ -1,100 +1,144 @@
-# RiichiEngine Adapter Contract
+# Adapter 契約
 
-host app 側は副作用と永続化を持ち、`riichi_engine` 側は pure domain を持つ。この境界で adapter が担う責務を固定する。
+`riichi_engine` は pure Ruby のドメインロジックのみを持ち、副作用・永続化は一切持ちません。  
+host app 側の「adapter 層」がこの境界で両者をつなぐ役割を担います。
 
-## Adapter Responsibilities
+---
 
-host app 側 adapter が担うもの:
+## 責務の境界
 
-- `RuleConfig` の生成
-- ActiveRecord model から snapshot の生成
-- `RoundState` の cache 保存・復元・削除
-- `round_end_info` の正規化
-- 最終結果への表示情報付与
-- CPU レベルに応じた AI インスタンス選択
+### riichi_engine 側が持つもの
 
-`riichi_engine` 側に持ち込まないもの:
+- 局進行ロジック
+- 和了判定・役判定
+- 点数計算・順位計算
+- CPU AI の判断ロジック
+
+### host app 側が持つもの（gem に持ち込まないもの）
 
 - ActiveRecord
 - ActionCable / Turbo
 - ActiveJob
-- cache backend
-- logger
-- request/session/user context
+- キャッシュバックエンド
+- ロガー
+- リクエスト / セッション / ユーザーコンテキスト
 
-## Concrete Adapters In Host App
+---
 
-現在の host app 側 adapter:
+## host app 側 adapter の役割
 
-- `MahjongAdapter::RuleBuilder`
-- `MahjongAdapter::SnapshotBuilder`
-- `MahjongAdapter::RoundEndInfoBuilder`
-- `MahjongAdapter::FinalResultBuilder`
-- `MahjongAdapter::RoundStateCache`
-- `MahjongAdapter::CpuAiFactory`
+host app には以下の adapter を実装します。各 adapter の責務を分けることで、gem のバージョンアップ時の修正箇所を局所化できます。
 
-## SnapshotBuilder Contract
+| Adapter | 責務 |
+|---|---|
+| `MahjongAdapter::RuleBuilder` | DB / room 設定から `RuleConfig` を生成する |
+| `MahjongAdapter::SnapshotBuilder` | ActiveRecord モデルから各種 Snapshot を生成する |
+| `MahjongAdapter::RoundEndInfoBuilder` | 局終了情報を `RoundEndInfo` に正規化する |
+| `MahjongAdapter::FinalResultBuilder` | 最終結果にプレイヤー表示情報を合成する |
+| `MahjongAdapter::RoundStateCache` | `RoundState` のキャッシュ保存・復元・削除を管理する |
+| `MahjongAdapter::CpuAiFactory` | CPU レベルに応じた AI インスタンスを選択する |
 
-`SnapshotBuilder` は ActiveRecord を pure snapshot へ落とす。
+---
 
-生成対象:
+## SnapshotBuilder の契約
 
-- `Mahjong::Snapshots::GameSetupSnapshot`
-- `Mahjong::Snapshots::GameProgressSnapshot`
-- `Mahjong::Snapshots::FinalResultSnapshot`
-- `Mahjong::Snapshots::WinEvaluationSnapshot`
+ActiveRecord オブジェクトを pure な Snapshot へ変換します。
 
-制約:
+**生成対象：**
 
-- snapshot には AR object を入れない
-- key は seat 基準で安定させる
-- score や bakaze などの値は domain がそのまま読める形にする
+```ruby
+Mahjong::Snapshots::GameSetupSnapshot      # 局開始時
+Mahjong::Snapshots::GameProgressSnapshot   # 局終了後の進行判定時
+Mahjong::Snapshots::FinalResultSnapshot    # ゲーム終了時の最終結果
+Mahjong::Snapshots::WinEvaluationSnapshot  # 和了評価時
+```
 
-## RuleBuilder Contract
+**制約：**
 
-`RuleBuilder` は host app の DB 設定や room/game 設定から `Mahjong::Config::RuleConfig` を作る。
+- Snapshot の値に ActiveRecord オブジェクトを含めない
+- key は seat 番号基準で統一する
+- `score` や `bakaze` などの値はドメイン側がそのまま読める形にする
 
-制約:
+---
 
-- `RuleConfig` に渡すのは plain Ruby `Hash`
-- adapter 側で key 正規化を意識しなくてよい
-- room/game model 自体を gem 側へ渡さない
+## RuleBuilder の契約
 
-## RoundStateCache Contract
+host app の DB 設定や room/game 設定から `Mahjong::Config::RuleConfig` を作成します。
 
-`RoundStateCache` は `RoundState` の serialize / deserialize と cache key を管理する。
+**制約：**
 
-制約:
+- `RuleConfig` に渡すのは plain Ruby の `Hash`（ActiveRecord モデルを渡さない）
+- key の正規化は `RuleConfig` 側で行うため、adapter 側で意識しなくてよい
 
-- cache backend の詳細は adapter 側で隠蔽する
-- gem 側には `json` 文字列だけを渡す
-- host app 側が version 管理や cache invalidation を担う
+```ruby
+# OK: Hash で渡す
+RuleConfig.new("kuitan" => room.rule_kuitan, "uma" => room.rule_uma)
 
-## RoundEndInfoBuilder Contract
+# NG: モデルを直接渡す
+RuleConfig.new(room)
+```
 
-`RoundEndInfoBuilder` は host app 文脈の局終了情報を `Mahjong::Results::RoundEndInfo` に正規化する。
+---
 
-担当:
+## RoundStateCache の契約
 
-- 流局時のテンパイ seat 算出
-- ノーテン罰符算出のための API 呼び出し
-- 和了評価のための snapshot 組み立て
+`RoundState` のシリアライズ・デシリアライズとキャッシュキーを管理します。
 
-## FinalResultBuilder Contract
+**制約：**
 
-`FinalResultBuilder` は順位計算後の `FinalResult` に host app 表示情報を合成する。
+- キャッシュバックエンドの詳細は adapter 側で隠蔽する
+- gem 側へは `json` 文字列のみを渡す
+- バージョン管理・キャッシュ失効（invalidation）は host app 側で担う
 
-担当:
+```ruby
+# 保存
+json = state.to_json
+RoundStateCache.save(round_id: round.id, json:)
+
+# 復元
+json  = RoundStateCache.load(round_id: round.id)
+state = RiichiEngine::API.deserialize_round_state(json)
+```
+
+---
+
+## RoundEndInfoBuilder の契約
+
+局終了時の host app 文脈の情報を `Mahjong::Results::RoundEndInfo` に正規化します。
+
+**担当する処理：**
+
+- 流局時のテンパイ座席の算出（`RiichiEngine::API.tenpai_seats` を呼ぶ）
+- ノーテン罰符計算のための API 呼び出し
+- 和了評価のためのスナップショット組み立て
+
+---
+
+## FinalResultBuilder の契約
+
+`RiichiEngine::API.calculate_final_results` が返す `FinalResult` に、host app 固有の表示情報を合成します。
+
+**担当する情報：**
 
 - `player_id`
-- `name`
-- app 固有の表示順・装飾に必要な補足情報
+- プレイヤー名
+- 表示順・装飾に必要な補足情報
 
-## Service Layer Rule
+---
 
-service/job は次を守る。
+## Service / Job 層のルール
 
-- gem 呼び出しは `RiichiEngine::API` を経由する
-- adapter 生成物だけを API に渡す
-- DB 保存、job enqueue、broadcast は service/job 側で行う
-- gem の内部 namespace を直接 stub / mock しない
+service / job が守るべきこと：
+
+1. gem の呼び出しは `RiichiEngine::API` を経由する
+2. API に渡すオブジェクトは adapter が生成したものだけにする
+3. DB 保存・Job enqueue・broadcast は service / job 側で行う
+4. gem の内部 namespace（`Mahjong::Flow::*` など）を直接 stub / mock しない
+
+```ruby
+# OK: API 経由
+result = RiichiEngine::API.apply_round_action(state:, action:, rule:)
+
+# NG: 内部クラスを直接呼ぶ
+result = Mahjong::Flow::Rounds::RoundFlow.apply_action(state:, action:, rule:)
+```

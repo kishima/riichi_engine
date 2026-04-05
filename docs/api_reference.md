@@ -1,208 +1,309 @@
-# RiichiEngine API Reference
+# API リファレンス
 
-`RiichiEngine::API` は host app や adapter 層から `riichi_engine` を呼ぶための公開入口。
+`RiichiEngine::API` は host app や adapter 層から `riichi_engine` を呼ぶための公開入口です。
 
-`Mahjong::*` 配下の domain object を直接使うことはできるが、局進行や和了評価の入口は原則 `RiichiEngine::API` を使う。
+局進行・和了評価・点数計算はすべてこのモジュールを経由してください。  
+内部 namespace（`Mahjong::Flow::*` 等）を host app から直接呼ぶことは避けてください（詳細は [公開 API ポリシー](public_api_policy.md)）。
 
-- 公開境界ポリシー: `docs/public_api_policy.md`
-- host app 契約: `docs/adapter_contract.md`
+牌記法や麻雀用語については [概念・用語集](concepts.md) を参照してください。
 
-## Common Types
+---
 
-### Rule
+## 共通の型
+
+### RuleConfig
+
+ゲームルールを保持するオブジェクトです。引数なしでデフォルトルールを使えます。
 
 ```ruby
-rule = Mahjong::Config::RuleConfig.new
+rule = Mahjong::Config::RuleConfig.new                  # デフォルト
+rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 ```
+
+#### RuleConfig の設定項目
+
+| キー | 型 | デフォルト | 説明 |
+|---|---|---|---|
+| `game_type` | String | `"hanchan"` | `"hanchan"`（東南戦）または `"tonpuu"`（東風戦） |
+| `initial_score` | Integer | `25000` | 開始点数 |
+| `oka_origin` | Integer | `30000` | オカの基準点 |
+| `uma` | Array | `[20000, 10000, -10000, -20000]` | ウマ（1位から順） |
+| `aka_dora` | Hash | `{ "m" => 1, "p" => 1, "s" => 1 }` | スートごとの赤ドラ枚数 |
+| `kuitan` | Boolean | `true` | 食い断あり |
+| `atozuke` | Boolean | `true` | 後付けあり |
+| `double_yakuman` | Boolean | `false` | ダブル役満あり |
+| `kazoe_yakuman` | Boolean | `true` | 数え役満あり |
+| `kiriage_mangan` | Boolean | `false` | 切り上げ満貫あり |
+| `triple_ron_draw` | Boolean | `true` | 三家和で流局 |
+| `double_ron` | Boolean | `true` | ダブロンあり |
+| `tobi` | Boolean | `true` | トビあり（点数が0点以下でゲーム終了） |
+| `nishi_iri` | Boolean | `false` | 西入あり |
+| `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
+| `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
 
 ### Snapshots
 
+局の状態を gem へ渡すための値オブジェクトです。ActiveRecord を含まない plain Ruby の構造体です。
+
 ```ruby
-Mahjong::Snapshots::GameSetupSnapshot
-Mahjong::Snapshots::GameProgressSnapshot
-Mahjong::Snapshots::FinalResultSnapshot
-Mahjong::Snapshots::WinEvaluationSnapshot
+Mahjong::Snapshots::GameSetupSnapshot      # 局開始情報
+Mahjong::Snapshots::GameProgressSnapshot   # 局終了後の進行情報
+Mahjong::Snapshots::FinalResultSnapshot    # ゲーム終了時の最終情報
+Mahjong::Snapshots::WinEvaluationSnapshot  # 和了評価用の情報
 ```
 
-### State
+各フィールドは [使用例](usage_examples.md) のコードを参照してください。
+
+### RoundState
+
+局の進行状態を保持するオブジェクトです。  
+`setup_round` が返し、`apply_round_action` に渡し続けることで局が進行します。  
+JSON へのシリアライズ・デシリアライズが可能なので、キャッシュに保存して復元することもできます。
 
 ```ruby
 Mahjong::State::RoundState
 ```
 
-## Methods
+---
+
+## メソッド一覧
 
 ### `setup_round(game_snapshot:, rule:, seed: nil)`
 
-局の初期状態を構築する。
+局の初期状態を構築します。牌山を生成し、配牌を行い、`RoundState` を返します。
 
-引数:
+**引数：**
 
-- `game_snapshot`: `Mahjong::Snapshots::GameSetupSnapshot`
-- `rule`: `Mahjong::Config::RuleConfig`
-- `seed`: `String | nil`
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `game_snapshot` | `GameSetupSnapshot` | 局番・点棒・親座席などの初期情報 |
+| `rule` | `RuleConfig` | ゲームルール |
+| `seed` | `String \| nil` | 牌山の乱数シード。同じ seed で再現可能。省略するとランダム |
 
-返り値:
+**返り値：** `Mahjong::State::RoundState`
 
-- `Mahjong::State::RoundState`
+---
 
 ### `apply_round_action(state:, action:, rule:)`
 
-局中アクションを state に適用する。
+局中のアクションを `state` に適用し、結果を返します。  
+`state` は破壊的に更新されます。
 
-引数:
+**引数：**
 
-- `state`: `Mahjong::State::RoundState`
-- `action`: `Hash`
-- `rule`: `Mahjong::Config::RuleConfig`
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `state` | `RoundState` | 現在の局状態 |
+| `action` | `Hash` | 適用するアクション |
+| `rule` | `RuleConfig` | ゲームルール |
 
-代表的な `action`:
+**`action` の形式：**
 
 ```ruby
 { type: :tsumo }
-{ type: :dahai, seat: 0, tile: "5m" }
-{ type: :riichi, seat: 0, tile: "3z" }
-{ type: :pon, seat: 1, tiles: %w[5m 5m] }
-{ type: :chi, seat: 1, tiles: %w[4m 6m] }
-{ type: :ankan, seat: 0, tile: "5m" }
-{ type: :kakan, seat: 0, tile: "5m" }
-{ type: :daiminkan, seat: 1 }
-{ type: :tsumo_agari, seat: 0 }
-{ type: :ron_agari, seat: 1 }
-{ type: :skip, seat: 2 }
+{ type: :dahai,          seat: 0, tile: "5m" }
+{ type: :riichi,         seat: 0, tile: "3z" }
+{ type: :pon,            seat: 1, tiles: %w[5m 5m] }
+{ type: :chi,            seat: 1, tiles: %w[4m 6m] }
+{ type: :ankan,          seat: 0, tile: "5m" }
+{ type: :kakan,          seat: 0, tile: "5m" }
+{ type: :daiminkan,      seat: 1 }
+{ type: :tsumo_agari,    seat: 0 }
+{ type: :ron_agari,      seat: 1 }
+{ type: :skip,           seat: 2 }
 { type: :kyuushu_kyuuhai, seat: 0 }
 ```
 
-返り値:
+アクション種別の詳細は [概念・用語集](concepts.md#アクション種別) を参照してください。
 
-- `Mahjong::Results::RoundFlowResult`
+**返り値：** `Mahjong::Results::RoundFlowResult`
 
-例外:
+| フィールド | 説明 |
+|---|---|
+| `state` | 更新後の `RoundState` |
+| `events` | このアクションで発生したイベントの配列 |
+| `round_end?` | 局が終了したか否か |
+| `round_end_info` | 局終了情報（`RoundEndInfo`）。局中は `nil` |
 
-- `RiichiEngine::API::InvalidActionError`
-- `RiichiEngine::API::EngineError`
+**例外：**
+
+| 例外 | 発生条件 |
+|---|---|
+| `RiichiEngine::API::InvalidActionError` | 不正なアクション（存在しない打牌・権利のない鳴きなど） |
+| `RiichiEngine::API::EngineError` | エンジン内部エラー |
+
+---
 
 ### `available_round_actions(state:, seat:, rule:)`
 
-指定 seat に対して現在選択可能な局中アクション一覧を返す。
+指定した `seat` が現在選択できるアクションの一覧を返します。  
+`apply_round_action` に渡す `action` の候補を取得するために使います。
 
-返り値:
+**返り値：** `Array<Hash>`
 
-- `Array<Hash>`
+各要素は `{ type: :dahai, tile: "5m" }` のような Hash です。
+
+---
 
 ### `resolve_pending_action(pending_actions)`
 
-鳴き競合時の優先順位を解決する。
+複数の seat が同時に鳴き・ロンを宣言した場合（鳴き競合）に、優先順位を解決して1つのアクションを選びます。
 
-引数:
+**引数：**
 
-- `pending_actions`: `Hash{Integer => Array<Hash>}`
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `pending_actions` | `Hash{Integer => Array<Hash>}` | seat番号 → アクション配列 のマップ |
 
-返り値:
+**返り値：** `Hash | nil`  
+競合を解決したアクション。有効なアクションがない場合は `nil`。
 
-- `Hash | nil`
-
-### `judge_next_game_round(progress_snapshot:, round_end_info:, rule:)`
-
-局終了後に次局へ進むかゲーム終了かを判定する。
-
-引数:
-
-- `progress_snapshot`: `Mahjong::Snapshots::GameProgressSnapshot`
-- `round_end_info`: `Mahjong::Results::RoundEndInfo` または同等の `Hash`
-- `rule`: `Mahjong::Config::RuleConfig`
-
-返り値:
-
-- `Mahjong::Results::GameFlowResult`
-
-### `calculate_final_results(final_result_snapshot:, rule:)`
-
-プレイヤー情報付きの最終結果を返す。
-
-引数:
-
-- `final_result_snapshot`: `Mahjong::Snapshots::FinalResultSnapshot`
-- `rule`: `Mahjong::Config::RuleConfig`
-
-返り値:
-
-- `Array<Mahjong::Results::FinalResult>`
-
-### `calculate_ranked_results(scores:, rule:)`
-
-順位と point 計算だけを行う。
-
-引数:
-
-- `scores`: `Hash{Integer => Integer}`
-- `rule`: `Mahjong::Config::RuleConfig`
-
-返り値:
-
-- `Array<Mahjong::Results::FinalResult>`
-
-### `calculate_tenpai_payments(tenpai_seats)`
-
-流局時のノーテン罰符を計算する。
-
-引数:
-
-- `tenpai_seats`: `Array<Integer>`
-
-返り値:
-
-- `Hash{Integer => Integer}`
+---
 
 ### `tenpai_seats(state)`
 
-現在の `RoundState` からテンパイ seat 一覧を返す。
+現在の `RoundState` からテンパイしている座席の一覧を返します。  
+流局時のノーテン罰符計算の前に使います。
 
-返り値:
+**返り値：** `Array<Integer>`（例: `[0, 2]`）
 
-- `Array<Integer>`
+---
+
+### `calculate_tenpai_payments(tenpai_seats)`
+
+流局時のノーテン罰符の支払い点数を計算します。  
+テンパイ者が受け取り、ノーテン者が支払う形で返します。
+
+**引数：**
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `tenpai_seats` | `Array<Integer>` | テンパイしている座席番号の配列 |
+
+**返り値：** `Hash{Integer => Integer}`
+
+```ruby
+# 例: seat 0, 2 がテンパイの場合
+# => { 0 => 1500, 1 => -1500, 2 => 1500, 3 => -1500 }
+```
+
+正の値が受け取り、負の値が支払いです。
+
+---
+
+### `judge_next_game_round(progress_snapshot:, round_end_info:, rule:)`
+
+局終了後に次局へ進むかゲームを終了するかを判定します。  
+オーラス・飛び・ゲーム終了条件なども考慮されます。
+
+**引数：**
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `progress_snapshot` | `GameProgressSnapshot` | 局終了後の点棒・場況 |
+| `round_end_info` | `RoundEndInfo` | 局終了の詳細情報 |
+| `rule` | `RuleConfig` | ゲームルール |
+
+**返り値：** `Mahjong::Results::GameFlowResult`
+
+`GameFlowResult` の主要フィールド：
+
+| フィールド | 説明 |
+|---|---|
+| `next_round?` | 次局へ進む場合 `true` |
+| `game_end?` | ゲームを終了する場合 `true` |
+| `next_bakaze` | 次局の場風（進行する場合） |
+| `next_kyoku` | 次局の局番号 |
+| `next_honba` | 次局の本場数 |
+
+---
+
+### `calculate_ranked_results(scores:, rule:)`
+
+点棒だけからウマ・オカを含む最終順位と持ち点を計算します。  
+プレイヤー情報（名前・ID 等）が不要な場合に使います。
+
+**引数：**
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `scores` | `Hash{Integer => Integer}` | seat番号 → 点棒 のマップ |
+| `rule` | `RuleConfig` | ゲームルール |
+
+**返り値：** `Array<Mahjong::Results::FinalResult>`
+
+---
+
+### `calculate_final_results(final_result_snapshot:, rule:)`
+
+プレイヤー情報（名前・ID）付きの最終結果を計算します。  
+UI 表示用に情報が必要な場合はこちらを使います。
+
+**引数：**
+
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `final_result_snapshot` | `FinalResultSnapshot` | 点棒とプレイヤー情報を含むスナップショット |
+| `rule` | `RuleConfig` | ゲームルール |
+
+**返り値：** `Array<Mahjong::Results::FinalResult>`
+
+---
 
 ### `evaluate_win(state:, seat:, agari_type:, agari_tile:, rule:, extra_flags:, snapshot:)`
 
-和了評価を行い、役情報と点数計算結果を返す。
+和了評価を行い、役一覧・翻数・符・点数計算結果を返します。
 
-引数:
+**引数：**
 
-- `state`: `Mahjong::State::RoundState`
-- `seat`: `Integer`
-- `agari_type`: `:tsumo | :ron`
-- `agari_tile`: `Mahjong::Tiles::Tile | String`
-- `rule`: `Mahjong::Config::RuleConfig`
-- `extra_flags`: `Hash`
-- `snapshot`: `Mahjong::Snapshots::WinEvaluationSnapshot`
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `state` | `RoundState` | 現在の局状態 |
+| `seat` | `Integer` | 和了者の座席番号 |
+| `agari_type` | `:tsumo \| :ron` | ツモ和了かロン和了か |
+| `agari_tile` | `Tile \| String` | 和了牌（例: `"5m"`） |
+| `rule` | `RuleConfig` | ゲームルール |
+| `extra_flags` | `Hash` | 追加フラグ（チャンカン・リンシャンなど。通常は `{}`） |
+| `snapshot` | `WinEvaluationSnapshot` | 場風・自風などの情報 |
 
-返り値:
+**返り値：** `[winner_info, score_result]`
 
-- `[winner_info, score_result]`
+| 要素 | 型 | 説明 |
+|---|---|---|
+| `winner_info` | `Hash` | 役名・翻数・符を含む情報 |
+| `score_result` | `Mahjong::Scoring::ValueObjects::ScoreResult` | 点数・各プレイヤーへの支払い情報（`.payments` で取得） |
 
-`winner_info` は役一覧や符翻を含む `Hash`、`score_result` は `Mahjong::Scoring::ValueObjects::ScoreResult`
+---
 
 ### `agari?(tiles_34)`
 
-34 形式の牌配列が和了形かどうかを返す。
+牌の配列が和了形かどうかを判定します。  
+34形式については [概念・用語集](concepts.md#34形式tiles_34) を参照してください。
 
-返り値:
+**返り値：** `true | false`
 
-- `true | false`
+---
 
 ### `deserialize_round_state(json)`
 
-シリアライズ済み `RoundState` JSON から state を復元する。
+JSON 文字列から `RoundState` を復元します。  
+Redis やメモリキャッシュに保存した state を復元するときに使います。
 
-返り値:
+**引数：**
 
-- `Mahjong::State::RoundState`
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `json` | `String` | `RoundState` をシリアライズした JSON 文字列 |
 
-## Error Aliases
+**返り値：** `Mahjong::State::RoundState`
 
-adapter 層は以下を rescue すればよい。
+---
+
+## エラー
 
 ```ruby
-RiichiEngine::API::InvalidActionError
-RiichiEngine::API::EngineError
+RiichiEngine::API::InvalidActionError  # 不正なアクション
+RiichiEngine::API::EngineError         # エンジン内部エラー
 ```
+
+adapter 層でこれらを rescue してください。内部エラー（`Mahjong::Errors::*`）を直接 rescue する必要はありません。

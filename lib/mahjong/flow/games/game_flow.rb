@@ -159,10 +159,22 @@ module Mahjong
     def self.normalize_round_end_info(info)
       return info if info.is_a?(Results::RoundEndInfo)
 
+      result_type = info[:result_type] || info[:type]
+      winners = info[:winners]
+      losers = info[:losers]
+
+      if winners.nil? && info.key?(:winner_seat)
+        winners = info[:winner_seat].nil? ? [] : [{ seat: info[:winner_seat] }]
+      end
+
+      if losers.nil? && info.key?(:loser_seat)
+        losers = info[:loser_seat].nil? ? [] : [{ seat: info[:loser_seat] }]
+      end
+
       Results::RoundEndInfo.new(
-        result_type: info[:result_type],
-        winners: info[:winners],
-        losers: info[:losers],
+        result_type: result_type,
+        winners: winners,
+        losers: losers,
         tenpai_seats: info[:tenpai_seats],
         draw_reason: info[:draw_reason],
         score_changes: info[:score_changes]

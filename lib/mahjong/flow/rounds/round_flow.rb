@@ -154,9 +154,11 @@ module Mahjong
     end
 
     def self.process_tsumo(state, _action, _rule)
+      clear_agari_flags(state)
+
       if state.wall.remaining <= 0
         state.phase = :round_end
-        state.instance_variable_set(:@round_end_info, { type: :ryuukyoku, winner_seat: nil, loser_seat: nil })
+        set_round_end_info(state, result_type: :ryuukyoku)
         return [{ type: :ryuukyoku }]
       end
 
@@ -173,7 +175,7 @@ module Mahjong
 
     def self.process_kyuushu_kyuuhai(state, action, _rule)
       state.phase = :round_end
-      state.instance_variable_set(:@round_end_info, { type: :kyuushu_kyuuhai, winner_seat: nil, loser_seat: nil, seat: action[:seat] })
+      set_round_end_info(state, result_type: :kyuushu_kyuuhai, seat: action[:seat])
 
       [{ type: :kyuushu_kyuuhai, seat: action[:seat] }]
     end
@@ -187,6 +189,7 @@ module Mahjong
       state.kawas[seat].add(tile, tsumogiri: tsumogiri, riichi: action[:riichi] || false)
       state.last_dahai = { seat: seat, tile: tile }
       state.last_tsumo = nil
+      clear_agari_flags(state)
       4.times { |s| state.first_turn_flags[s] = false }
 
       naki_options = Detectors::NakiDetector.detect(state: state, dahai_seat: seat, dahai_tile: tile, rule: rule)
@@ -200,16 +203,23 @@ module Mahjong
       [{ type: :dahai, seat: seat, tile: tile.to_s, tsumogiri: tsumogiri }]
     end
 
-    def self.process_skip(state, action, _rule)
+    def self.process_skip(state, action, rule)
       seat = action[:seat]
       state.pending_actions.delete(seat)
+      agari_tile = state.chankan_tile || state.last_dahai&.dig(:tile)
 
-      if can_ron_without_furiten?(state, seat, state.last_dahai[:tile])
+      if agari_tile && can_ron_without_furiten?(state, seat, agari_tile, rule)
         state.dojun_furiten_flags[seat] = true
         state.riichi_furiten_flags[seat] = true if state.riichi_flags[seat]
       end
 
-      advance_turn(state) if state.pending_actions.empty?
+      if state.pending_actions.empty?
+        if state.chankan_tile
+          finalize_kakan(state)
+        else
+          advance_turn(state)
+        end
+      end
       [{ type: :skip, seat: seat }]
     end
 
@@ -283,7 +293,7 @@ module Mahjong
       [{ type: :ankan, seat: seat, tile: tile.to_s }]
     end
 
-    def self.process_kakan(state, action, _rule)
+    def self.process_kakan(state, action, rule)
       seat = action[:seat]
       tile = Tiles::Tile.new(action[:tile])
       target_fuuro = state.fuuros[seat].find { |fuuro| fuuro.pon? && fuuro.tiles.all? { |t| t.same_kind?(tile) } }
@@ -292,7 +302,17 @@ module Mahjong
       state.hands[seat] = state.hands[seat].remove(tile)
       state.fuuros[seat] = state.fuuros[seat].reject { |fuuro| fuuro.equal?(target_fuuro) }
       state.fuuros[seat] << State::Fuuro.new(type: :kakan, tiles: target_fuuro.tiles + [tile], called_tile: target_fuuro.called_tile, from_seat: target_fuuro.from_seat)
-      apply_kan_transition(state, seat, tile, open_kan: true)
+      state.current_seat = seat
+      state.chankan_tile = tile
+      state.last_dahai = { seat: seat, tile: tile }
+
+      pending_actions = detect_chankan_actions(state, seat, rule)
+      if pending_actions.any?
+        state.phase = :naki_wait
+        state.pending_actions = pending_actions
+      else
+        finalize_kakan(state)
+      end
 
       [{ type: :kakan, seat: seat, tile: tile.to_s }]
     end
@@ -315,7 +335,7 @@ module Mahjong
     def self.process_tsumo_agari(state, action, _rule)
       seat = action[:seat]
       state.phase = :round_end
-      state.instance_variable_set(:@round_end_info, { type: :tsumo_agari, winner_seat: seat, loser_seat: nil, rinshan: state.rinshan_flag })
+      set_round_end_info(state, result_type: :tsumo_agari, winner_seat: seat, rinshan: state.rinshan_flag)
 
       [{ type: :tsumo_agari, seat: seat }]
     end
@@ -323,7 +343,13 @@ module Mahjong
     def self.process_ron_agari(state, action, _rule)
       seat = action[:seat]
       state.phase = :round_end
-      state.instance_variable_set(:@round_end_info, { type: :ron_agari, winner_seat: seat, loser_seat: state.last_dahai[:seat], chankan: !state.chankan_tile.nil? })
+      set_round_end_info(
+        state,
+        result_type: :ron_agari,
+        winner_seat: seat,
+        loser_seat: state.last_dahai[:seat],
+        chankan: !state.chankan_tile.nil?
+      )
 
       [{ type: :ron_agari, seat: seat, from: state.last_dahai[:seat] }]
     end
@@ -331,13 +357,15 @@ module Mahjong
     def self.advance_turn(state)
       if state.wall.remaining <= 0
         state.phase = :round_end
-        state.instance_variable_set(:@round_end_info, { type: :ryuukyoku, winner_seat: nil, loser_seat: nil })
+        clear_agari_flags(state)
+        set_round_end_info(state, result_type: :ryuukyoku)
         return
       end
 
       state.current_seat = (state.current_seat + 1) % 4
       state.phase = :tsumo
       state.dojun_furiten_flags[state.current_seat] = false
+      clear_agari_flags(state)
     end
 
     def self.can_tsumo_agari?(state, seat, rule)
@@ -445,10 +473,8 @@ module Mahjong
         Tiles::TileSet.yaochu_kind_count(state.hands[seat].tiles) >= 9
     end
 
-    def self.can_ron_without_furiten?(state, seat, tile)
-      test_hand_34 = state.hands[seat].to_34
-      test_hand_34[Tiles::TileSet.tile_index(tile)] += 1
-      Scoring::Judges::AgariJudge.agari?(test_hand_34)
+    def self.can_ron_without_furiten?(state, seat, tile, rule)
+      can_ron_agari?(state, seat, tile, rule)
     end
 
     def self.pon_choices(state, seat, tile)
@@ -504,6 +530,58 @@ module Mahjong
       state.last_tsumo = rinshan_tile
       clear_ippatsu_flags(state)
     end
+    private_class_method :apply_kan_transition
+
+    def self.finalize_kakan(state)
+      tile = state.chankan_tile
+      apply_kan_transition(state, state.current_seat, tile, open_kan: true)
+      state.chankan_tile = nil
+      state.pending_actions = {}
+    end
+    private_class_method :finalize_kakan
+
+    def self.detect_chankan_actions(state, kakan_seat, rule)
+      options = {}
+
+      4.times do |seat|
+        next if seat == kakan_seat
+
+        next unless can_ron_agari?(state, seat, state.chankan_tile, rule)
+
+        furiten = Scoring::Judges::FuritenJudge.judge(state: state, seat: seat)
+        options[seat] = [{ type: :ron_agari }] unless furiten.furiten?
+      end
+
+      options
+    end
+    private_class_method :detect_chankan_actions
+
+    def self.clear_agari_flags(state)
+      state.rinshan_flag = false
+      state.chankan_tile = nil
+    end
+    private_class_method :clear_agari_flags
+
+    def self.set_round_end_info(state, result_type:, winner_seat: nil, loser_seat: nil, **extra)
+      winners = winner_seat.nil? ? [] : [{ seat: winner_seat }]
+      losers = loser_seat.nil? ? [] : [{ seat: loser_seat }]
+
+      state.instance_variable_set(
+        :@round_end_info,
+        {
+          type: result_type,
+          winner_seat: winner_seat,
+          loser_seat: loser_seat,
+          result_type: result_type,
+          winners: winners,
+          losers: losers,
+          tenpai_seats: extra[:tenpai_seats] || [],
+          draw_reason: extra[:draw_reason],
+          score_changes: extra[:score_changes] || {}
+        }.merge(extra)
+      )
+    end
+    private_class_method :set_round_end_info
       end
     end
   end
