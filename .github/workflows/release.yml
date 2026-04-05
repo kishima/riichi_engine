@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Run specs
+        run: bundle exec rspec
+
+      - name: Build gem
+        run: gem build riichi_engine.gemspec
+
+      - name: Configure RubyGems credentials
+        run: |
+          mkdir -p ~/.gem
+          cat > ~/.gem/credentials <<CREDENTIALS
+          ---
+          :rubygems_api_key: ${RUBYGEMS_API_KEY}
+          CREDENTIALS
+          chmod 0600 ~/.gem/credentials
+
+      - name: Publish to RubyGems
+        run: gem push riichi_engine-*.gem

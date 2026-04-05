@@ -1,0 +1,42 @@
+PATH
+  remote: .
+  specs:
+    riichi_engine (0.1.0)
+      zeitwerk
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    diff-lcs (1.6.2)
+    rspec-core (3.13.6)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.5)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-mocks (3.13.8)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-support (3.13.7)
+    zeitwerk (2.7.5)
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  riichi_engine!
+  rspec-core
+  rspec-expectations
+  rspec-mocks
+
+CHECKSUMS
+  diff-lcs (1.6.2)
+  riichi_engine (0.1.0)
+  rspec-core (3.13.6)
+  rspec-expectations (3.13.5)
+  rspec-mocks (3.13.8)
+  rspec-support (3.13.7)
+  zeitwerk (2.7.5)
+
+BUNDLED WITH
+  4.0.6
