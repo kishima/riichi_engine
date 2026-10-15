@@ -193,7 +193,8 @@ module Mahjong
       state.last_tsumo = nil
       state.ippatsu_flags[seat] = false if state.riichi_flags[seat] && !action[:riichi]
       clear_agari_flags(state)
-      4.times { |s| state.first_turn_flags[s] = false }
+      # 第一打牌が済んだのはこの席だけ（ほかの席の第一巡は、鳴きが入るまで続く）
+      state.first_turn_flags[seat] = false
 
       naki_options = Detectors::NakiDetector.detect(state: state, dahai_seat: seat, dahai_tile: tile, rule: rule)
       if naki_options.any?
@@ -245,6 +246,7 @@ module Mahjong
       state.menzen_flags[seat] = false
       state.last_tsumo = nil
       clear_ippatsu_flags(state)
+      clear_first_turn_flags(state)
 
       [{ type: :pon, seat: seat, tiles: tiles.map(&:to_s) }]
     end
@@ -268,6 +270,7 @@ module Mahjong
       state.menzen_flags[seat] = false
       state.last_tsumo = nil
       clear_ippatsu_flags(state)
+      clear_first_turn_flags(state)
 
       [{ type: :chi, seat: seat, tiles: tiles.map(&:to_s) }]
     end
@@ -551,6 +554,13 @@ module Mahjong
       state.ippatsu_flags.keys.each { |seat| state.ippatsu_flags[seat] = false }
     end
 
+    # 鳴き（暗槓を含む）が入ると、まだ打牌していない席の第一巡も終わる
+    # （ダブル立直・地和・九種九牌はできなくなる）。
+    def self.clear_first_turn_flags(state)
+      state.first_turn_flags.keys.each { |seat| state.first_turn_flags[seat] = false }
+    end
+    private_class_method :clear_first_turn_flags
+
     def self.kan_available?(state)
       return true unless state.wanpai
 
@@ -570,6 +580,7 @@ module Mahjong
       state.hands[seat] = state.hands[seat].add(rinshan_tile)
       state.last_tsumo = rinshan_tile
       clear_ippatsu_flags(state)
+      clear_first_turn_flags(state)
     end
     private_class_method :apply_kan_transition
 
