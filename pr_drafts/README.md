@@ -38,6 +38,13 @@
 | `feat/kan-dora-after-discard` | [feat-kan-dora-after-discard.md](feat-kan-dora-after-discard.md) | | flow/rounds/kan_dora_spec.rb（新規） |
 | `feat/double-yakuman` | [feat-double-yakuman.md](feat-double-yakuman.md) | `feat/multiple-yakuman` | scoring/evaluators/double_yakuman_spec.rb（新規） |
 | `feat/agari-yame` | [feat-agari-yame.md](feat-agari-yame.md) | `fix/tonpuu-game-type` | game_flow_spec.rb |
+| `fix/kan-uradora` | [fix-kan-uradora.md](fix-kan-uradora.md) | `fix/dora-indicators` | flow/rounds/kan_uradora_spec.rb（新規） |
+| `feat/kuikae` | [feat-kuikae.md](feat-kuikae.md) | | flow/rounds/kuikae_spec.rb（新規） |
+| `feat/riichi-ankan` | [feat-riichi-ankan.md](feat-riichi-ankan.md) | | flow/rounds/riichi_ankan_spec.rb（新規） |
+| `feat/kokushi-ankan-chankan` | [feat-kokushi-ankan-chankan.md](feat-kokushi-ankan-chankan.md) | | flow/rounds/kokushi_ankan_chankan_spec.rb（新規） |
+| `feat/pao-honba` | [feat-pao-honba.md](feat-pao-honba.md) | `feat/pao` | scoring/evaluators/pao_spec.rb |
+| `feat/tenhou-best-tile` | [feat-tenhou-best-tile.md](feat-tenhou-best-tile.md) | `feat/double-yakuman` | scoring/evaluators/tenhou_best_tile_spec.rb（新規） |
+| `feat/sudden-death` | [feat-sudden-death.md](feat-sudden-death.md) | `feat/agari-yame` | game_flow_spec.rb |
 
 ## 隣り合う変更（先に入った方の後で rebase が要る）
 
@@ -49,7 +56,17 @@
   キーワードを足す。両方入れると `from_seat:, rule:` の両方を受け、ロンの席は打牌者から順に並べる。
 - `RuleConfig::DEFAULTS` の末尾と `api_reference.md` の RuleConfig の表の末尾には、`feat/*` の各ブランチがキーを足す
   （`feat/abortive-draws`・`feat/nagashi-mangan`・`feat/pao`・`feat/kan-dora-after-discard`・`feat/agari-yame`）。
-  後に入れる方は前の行の末尾にカンマを足すだけ。
+  後に入れる方は前の行の末尾にカンマを足すだけ。`feat/kuikae`・`feat/riichi-ankan`・`feat/kokushi-ankan-chankan`・
+  `feat/pao-honba`・`feat/tenhou-best-tile`・`feat/sudden-death` も同じ（`feat/pao-honba` は `"pao" => []` の次の行）。
+- `fix/kan-uradora` は槓で新ドラをめくる行（`apply_kan_transition`）を触る。`feat/kan-dora-after-discard` が入ると、
+  その行は `reveal_kan_dora` に移る（槓裏の 1 行もそこへ）。
+- `feat/kuikae`・`fix/shanten-melds`・`fix/cpu-riichi` は `BaseAi#think_dahai` の最後の行と `DahaiSelector.select` の
+  引数を触る。両方入れると `select(..., seat:, allowed:)`。`feat/kuikae` と `fix/riichi-discard` は
+  `ActionValidator` の打牌の検査に 1 行ずつ足す。
+- `feat/kokushi-ankan-chankan` は `process_ankan`・`finalize_kakan` を触る。`fix/red-five`（暗槓の牌の取り方）・
+  `feat/kan-dora-after-discard`（`rule:` を渡す）と隣り合う。
+- `feat/riichi-ankan` は `available_actions` の暗槓の候補を出すところを触る（`fix/riichi-discard` の近く）。
+- `feat/sudden-death` は `GameFlow.should_end_game?` を触る（`fix/unknown-game-type` の `else` と隣り合う）。
 - `RoundState` の属性・`to_json`・`from_json` の末尾には `feat/pao`（`pao_seats`）と `feat/kan-dora-after-discard`
   （`pending_kan_dora`）が足す。
 - `round_flow.rb` の `process_dahai`・`process_skip`・`advance_turn` の前後は、`fix/first-turn-flags`・
@@ -74,14 +91,20 @@
 - トビは 0 点未満で終了、ちょうど 0 点は続行。
 - 途中流局（四風連打・四槓散了・四家立直）・流し満貫・包・明槓の新ドラを打牌の後にめくること・テンパイ止めは、
   どれも既定で無効。アガリ止めは既定で有効（0.1.0 の動き）。
+- 喰い替え（`kuikae`）は既定であり。禁止にすると現物と筋の両方を禁じる。
+- リーチ後の暗槓（`riichi_ankan`）・国士無双の暗槓の搶槓（`kokushi_ankan_chankan`）・天和の和了牌の選び直し
+  （`tenhou_best_tile`）・東風戦の南入（`nan_iri`）・サドンデス（`sudden_death`）は既定でなし。包のロンの積み棒は既定で
+  放銃者（`pao_honba`）。
+- 延長戦（`nishi_iri`・`nan_iri`）のあるルールでは、アガリ止め・テンパイ止めに基準点が要る（`feat/sudden-death`）。
 
 gemspec はすでに `spec.license = "MIT"` を持つ（公開された 0.1.0 も同じ）ので変えるものは無い。
 
 ## まだ扱っていないもの（見つけたが後回し）
 
-- 喰い替え（鳴いた牌と同じ種類・筋の牌をすぐ切ること）を禁じる決まりが無い。鳴いた直後の打牌の候補に、
-  鳴いた牌と同じ牌も出る。
 - リーチの宣言牌がロンされたとき、リーチ棒を戻す（リーチ不成立）扱いが無い（`process_riichi` が宣言の時点で 1000 点を払う）。
 - normal・hard の CPU は役の有無を見ずに鳴く（向聴が下がれば鳴く）ので、役の無い鳴き手で和了れない局がある。
+- 役の無い聴牌でアガリ牌を見逃したときの同巡フリテン: 見逃しの判定はロンの候補が出た席（役のある席）だけで、
+  役が無くてロンの出ない席はフリテンにならない。
+- 副露している牌と同じ牌の単騎（ポンした牌の 4 枚目待ち）はテンパイとして数える（手の内に 4 枚ある単騎だけを除く）。
 - easy の CPU は、向聴数を保つ打牌のうち么九牌を先に、受け入れの少ない方を切る。合法で向聴は落とさないので、
   弱くしてある作りとしてそのままにした。

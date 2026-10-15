@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.1.fmrb4（Fork の fmrb ブランチ、未公開）
+
+### 修正
+
+- **槓裏** — 槓の後のリーチ和了で槓裏が数えられていなかった（`RoundState#uradora_hyouji` が配牌のときのまま）（`fix/kan-uradora`）
+
+### 機能（ルールのキー。既定はどれも 0.1.0 の動き）
+
+- **喰い替えの禁止** — `kuikae`（既定 `true`＝あり）（`feat/kuikae`）
+- **リーチ後の暗槓** — `riichi_ankan`（既定 `false`）。自摸った牌で、待ちが変わらないときだけ（`feat/riichi-ankan`）
+- **国士無双の暗槓の搶槓** — `kokushi_ankan_chankan`（既定 `false`）（`feat/kokushi-ankan-chankan`）
+- **包のロンの積み棒** — `pao_honba`（既定 `"discarder"`、`"liable"` で責任者）（`feat/pao-honba`）
+- **天和の和了牌** — `tenhou_best_tile`（既定 `false`）。最も高い点になる牌を和了牌とする（`feat/tenhou-best-tile`）
+- **南入・サドンデス** — `nan_iri`・`sudden_death`（既定 `false`）。延長戦のあるルールではアガリ止め・テンパイ止めに基準点が要る（`feat/sudden-death`）
+
+### 試験
+
+- 473 examples。Python `mahjong` との突き合わせは違い 0。
+
 ## 0.1.1.fmrb3（Fork の fmrb ブランチ、未公開）
 
 ### 修正
