@@ -41,7 +41,7 @@ module Mahjong
       end
 
       def chunchan?
-        suuhai? && number >= 2 && number <= 8
+        suuhai? && effective_number >= 2 && effective_number <= 8
       end
 
       def routou?

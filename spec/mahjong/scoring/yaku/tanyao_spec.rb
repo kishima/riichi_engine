@@ -29,6 +29,12 @@ RSpec.describe Mahjong::Scoring::Yaku::Tanyao do
       expect(described_class.check(ctx)).to be_nil
     end
 
+    it "赤五を含んでも成立する" do
+      ctx = yaku_context_for("2m 3m 4m 3m 4m 0m 4m 5m 6m 2p 3p 4p 0p 5p", agari_type: :ron, machi_type: :tanki)
+
+      expect(described_class.check(ctx)&.name).to eq("tanyao")
+    end
+
     it "么九牌を含むと不成立" do
       ctx = yaku_context_for("1m 2m 3m 3m 4m 5m 4m 5m 6m 2p 3p 4p 5p 5p",
                              agari_type: :ron, machi_type: :tanki)
