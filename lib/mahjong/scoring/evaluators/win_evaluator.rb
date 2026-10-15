@@ -30,8 +30,8 @@ module Mahjong
               is_houtei: state.is_houtei?,
               is_rinshan: extra_flags[:rinshan] == true,
               is_chankan: extra_flags[:chankan] == true,
-              dora_tiles: state.dora_hyouji,
-              uradora_tiles: state.uradora_hyouji,
+              dora_tiles: dora_tiles_for(state.dora_hyouji),
+              uradora_tiles: dora_tiles_for(state.uradora_hyouji),
               machi_type: machi_type || :tanki,
               rule: rule
             )
@@ -84,6 +84,11 @@ module Mahjong
           tiles + [agari_tile]
         end
         private_class_method :winning_hand_tiles
+
+        def self.dora_tiles_for(hyouji_tiles)
+          Array(hyouji_tiles).map { |tile| Tiles::Tile.new(tile.next_tile_notation) }
+        end
+        private_class_method :dora_tiles_for
 
         def self.remove_agari_tile(full_hand_tiles, agari_tile)
           removed = false
