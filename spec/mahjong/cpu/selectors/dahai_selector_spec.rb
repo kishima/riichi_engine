@@ -29,6 +29,25 @@ RSpec.describe Mahjong::Cpu::Selectors::DahaiSelector do
     expect(tile).to eq("6z")
   end
 
+  it "中級は同じ向聴なら受入の多い形を残す" do
+    state = build_state
+    hand = Mahjong::State::Hand.new(tiles("1m 2m 3m 4p 5p 6p 7s 8s 9s 2m 2m 3s 4s 6s"))
+
+    tile = described_class.select(hand:, state:, level: 2)
+
+    # 6s・9s 切りは 2s-5s の両面（8 枚）、3s 切りは 5s の嵌張（4 枚）
+    expect(%w[6s 9s]).to include(tile)
+  end
+
+  it "上級も向聴の近い手では受入の多い形を残す" do
+    state = build_state
+    hand = Mahjong::State::Hand.new(tiles("1m 2m 3m 4p 5p 6p 7s 8s 9s 2m 2m 3s 4s 6s"))
+
+    tile = described_class.select(hand:, state:, level: 3)
+
+    expect(%w[6s 9s]).to include(tile)
+  end
+
   it "上級は他家リーチ時に現物を優先する" do
     state = build_state
     state.riichi_flags[1] = true
