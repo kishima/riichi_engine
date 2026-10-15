@@ -510,7 +510,9 @@ module Mahjong
       state.ippatsu_flags.keys.each { |seat| state.ippatsu_flags[seat] = false }
     end
 
+    # 海底牌（牌山の最後の 1 枚）を引いた後は槓できない。
     def self.kan_available?(state)
+      return false if state.wall&.empty?
       return true unless state.wanpai
 
       state.wanpai&.rinshan_remaining.to_i.positive? && state.wanpai&.dora_revealable?
@@ -526,6 +528,9 @@ module Mahjong
       state.wanpai.reveal_new_dora!
       state.dora_hyouji = state.wanpai.dora_hyouji.dup
       rinshan_tile = state.wanpai.draw_rinshan!
+      # 王牌は 14 枚のまま: 嶺上牌を取った分、牌山の最後の牌が王牌に回る
+      # （牌山が 1 枚短くなり、海底もその分早くなる）
+      state.wall.draw_from_end! if state.wall && !state.wall.empty?
       state.hands[seat] = state.hands[seat].add(rinshan_tile)
       state.last_tsumo = rinshan_tile
       clear_ippatsu_flags(state)
