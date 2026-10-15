@@ -43,7 +43,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `agari_yame` | Boolean | `true` | アガリ止めあり（オーラスで首位の親が和了ればゲーム終了。理由 `:all_last_oya_agari`） |
 | `tenpai_yame` | Boolean | `false` | テンパイ止めあり（オーラスで首位の親がテンパイで流局すればゲーム終了。理由 `:all_last_oya_tenpai`） |
 | `nan_iri` | Boolean | `false` | 東風戦の南入あり（東4局の後に誰も `nishi_iri_threshold` に届いていなければ南場へ。東風戦は西場には入らない） |
-| `sudden_death` | Boolean | `false` | 延長戦（半荘の西場・東風戦の南場）をサドンデスにする。誰かが `nishi_iri_threshold` 以上になった局の後に終わり（理由 `:sudden_death`。ただし親を含む複数人のロンで親が連荘するときは続ける）、延長は 1 つの場だけ（その場の 4 局の後に終わる） |
+| `sudden_death` | Boolean | `false` | 延長戦（半荘の西場・東風戦の南場）をサドンデスにする。誰かが `nishi_iri_threshold` 以上になった局の後に終わり（理由 `:sudden_death`。ただし親を含む複数人のロンで親が連荘するときは、延長戦の 4 局目のアガリ止めより先に続ける）、延長は 1 つの場だけ（その場の 4 局の後に終わる） |
 
 ### Snapshots
 
