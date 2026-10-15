@@ -11,6 +11,6 @@ module Mahjong::Scoring::Yaku::Iipeiko
 
       def self.count_shuntsu_pairs(shuntsu_list)
         keys = shuntsu_list.map { |m| t = m.representative_tile; [t.suit, t.effective_number] }
-        keys.tally.values.count { |c| c >= 2 }
+        keys.tally.values.sum { |c| c / 2 }
       end
 end
