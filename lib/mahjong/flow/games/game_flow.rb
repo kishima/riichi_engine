@@ -105,7 +105,7 @@ module Mahjong
         round_end_info.winners.any? { |w| w[:seat] == progress_snapshot.oya_index }
       when :ryuukyoku
         round_end_info.tenpai_seats.include?(progress_snapshot.oya_index)
-      when :draw_abortive, :kyuushu_kyuuhai
+      when :draw_abortive, :kyuushu_kyuuhai, :sanchahou
         true
       else
         false
@@ -116,7 +116,7 @@ module Mahjong
       case round_end_info.result_type
       when :tsumo_agari, :ron_agari, :tsumo, :ron
         renchan ? progress_snapshot.honba + 1 : 0
-      when :ryuukyoku, :draw_abortive, :kyuushu_kyuuhai
+      when :ryuukyoku, :draw_abortive, :kyuushu_kyuuhai, :sanchahou
         progress_snapshot.honba + 1
       else
         0

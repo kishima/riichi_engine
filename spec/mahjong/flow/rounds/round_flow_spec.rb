@@ -560,4 +560,86 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
     expect(result).to be_round_end
     expect(result.round_end_info[:type]).to eq(:kyuushu_kyuuhai)
   end
+
+  describe "複数のロン" do
+    # seat 2 の 8s に、seat 0・1・3 がそれぞれロンできる（断么九、6s7s の両面待ち）。
+    def ron_state(rule, ron_seats)
+      flow_state = described_class.setup(game_snapshot:, rule:, seed: "multiple-ron-seed")
+      flow_state.phase = :naki_wait
+      flow_state.current_seat = 2
+      flow_state.last_dahai = { seat: 2, tile: Mahjong::Tiles::Tile.new("8s") }
+      pairs = { 0 => "2p 2p", 1 => "4p 4p", 3 => "3p 3p" }
+      ron_seats.each do |seat|
+        flow_state.hands[seat] = Mahjong::State::Hand.new(tiles("2m 3m 4m 5p 6p 7p 3s 4s 5s 6s 7s #{pairs[seat]}"))
+      end
+      flow_state.pending_actions = ron_seats.to_h { |seat| [seat, [{ type: :ron_agari }]] }
+      flow_state
+    end
+
+    it "double_ron なら 2 人とも和了り、winners は打牌者の下家から順" do
+      rule = Mahjong::Config::RuleConfig.new("double_ron" => true)
+      flow_state = ron_state(rule, [0, 3])
+
+      resolved = RiichiEngine::API.resolve_pending_action(flow_state.pending_actions, rule:)
+      result = described_class.apply_action(state: flow_state, action: resolved, rule:)
+
+      expect(result).to be_round_end
+      expect(result.round_end_info[:result_type]).to eq(:ron_agari)
+      expect(result.round_end_info[:winners]).to eq([{ seat: 3 }, { seat: 0 }])
+      expect(result.round_end_info[:winner_seat]).to eq(3)
+      expect(result.round_end_info[:loser_seat]).to eq(2)
+      expect(result.events.map { |e| e[:seat] }).to eq([3, 0])
+    end
+
+    it "double_ron が偽なら 2 人のロンを受けない" do
+      rule = Mahjong::Config::RuleConfig.new("double_ron" => false)
+      flow_state = ron_state(rule, [0, 3])
+
+      expect do
+        described_class.apply_action(state: flow_state, action: { type: :ron_agari, seat: 0, seats: [0, 3] }, rule:)
+      end.to raise_error(Mahjong::Errors::InvalidActionError, "double ron is not allowed")
+    end
+
+    it "ロンできない席を seats に入れると受けない" do
+      rule = Mahjong::Config::RuleConfig.new
+      flow_state = ron_state(rule, [0])
+      flow_state.pending_actions[1] = [{ type: :ron_agari }]
+
+      expect do
+        described_class.apply_action(state: flow_state, action: { type: :ron_agari, seat: 0, seats: [0, 1] }, rule:)
+      end.to raise_error(Mahjong::Errors::InvalidActionError, "every seat must be able to ron")
+    end
+
+    it "3 人のロンは triple_ron_draw なら三家和で流局" do
+      rule = Mahjong::Config::RuleConfig.new("triple_ron_draw" => true)
+      flow_state = ron_state(rule, [0, 1, 3])
+
+      resolved = RiichiEngine::API.resolve_pending_action(flow_state.pending_actions, rule:)
+      result = described_class.apply_action(state: flow_state, action: resolved, rule:)
+
+      expect(result).to be_round_end
+      expect(result.round_end_info[:result_type]).to eq(:sanchahou)
+      expect(result.round_end_info[:winners]).to eq([])
+      expect(result.round_end_info[:ron_seats]).to eq([0, 1, 3])
+    end
+
+    it "triple_ron_draw なら 3 人の和了は受けない" do
+      rule = Mahjong::Config::RuleConfig.new("triple_ron_draw" => true)
+      flow_state = ron_state(rule, [0, 1, 3])
+
+      expect do
+        described_class.apply_action(state: flow_state, action: { type: :ron_agari, seat: 0, seats: [0, 1, 3] }, rule:)
+      end.to raise_error(Mahjong::Errors::InvalidActionError, "three rons are sanchahou")
+    end
+
+    it "triple_ron_draw が偽なら 3 人とも和了る" do
+      rule = Mahjong::Config::RuleConfig.new("triple_ron_draw" => false)
+      flow_state = ron_state(rule, [0, 1, 3])
+
+      resolved = RiichiEngine::API.resolve_pending_action(flow_state.pending_actions, rule:)
+      result = described_class.apply_action(state: flow_state, action: resolved, rule:)
+
+      expect(result.round_end_info[:winners]).to eq([{ seat: 3 }, { seat: 0 }, { seat: 1 }])
+    end
+  end
 end

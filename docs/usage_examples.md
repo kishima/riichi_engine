@@ -108,6 +108,15 @@ end
 
 `resolved` が `nil` の場合、有効な鳴きがなかった（全員スキップ）ことを意味します。
 
+`rule:` を渡すと、ロンが 2 人以上のときにルールの `double_ron`・`triple_ron_draw` に従います
+（ダブロンは `seats:` の付いたロン、三家和は `:sanchahou`）。
+
+```ruby
+resolved = RiichiEngine::API.resolve_pending_action(state.pending_actions, rule: rule)
+# => { type: :ron_agari, seat: 3, seats: [3, 0] }  # ダブロン
+# => { type: :sanchahou, seats: [0, 1, 3] }       # 三家和
+```
+
 ---
 
 ## 4. 流局時のテンパイ料を計算する

@@ -145,7 +145,7 @@ Mahjong::State::RoundState
 
 ---
 
-### `resolve_pending_action(pending_actions, from_seat: nil)`
+### `resolve_pending_action(pending_actions, from_seat: nil, rule: nil)`
 
 複数の seat が同時に鳴き・ロンを宣言した場合（鳴き競合）に、優先順位を解決して1つのアクションを選びます。
 
@@ -155,9 +155,29 @@ Mahjong::State::RoundState
 |---|---|---|
 | `pending_actions` | `Hash{Integer => Array<Hash>}` | seat番号 → アクション配列 のマップ |
 | `from_seat` | `Integer \| nil` | 打牌（加槓）した seat。渡すと同じ優先度どうしはその下家から順に優先する（頭はね）。省略時は seat 番号の若い順 |
+| `rule` | `RuleConfig`（任意） | 渡すと、ロンが複数のときに `double_ron`・`triple_ron_draw` に従う |
 
 **返り値：** `Hash | nil`  
 競合を解決したアクション。有効なアクションがない場合は `nil`。
+
+`rule` を渡したときのロンが 2 人以上の場合：
+
+| ロンの人数 | ルール | 返すアクション |
+|---|---|---|
+| 3 人 | `triple_ron_draw` が真 | `{ type: :sanchahou, seats: [...] }`（三家和の流局） |
+| 2 人、または 3 人で `triple_ron_draw` が偽 | `double_ron` が真 | `{ type: :ron_agari, seat: 先頭, seats: [...] }`（全員が和了る） |
+| 上のどちらでもない | | 1 人のロン（`rule` を渡さないときと同じ） |
+
+`rule` を省略すると今までどおり 1 つのアクションだけを返します。
+
+#### ダブロンの点数
+
+`seats:` のロンでは `round_end_info[:winners]` が放銃者の下家から順に並び、先頭が `winner_seat` です。
+点数は和了った席ごとに `evaluate_win` で求めます。積み棒と供託は `winners` の先頭（頭はねなら和了る席）
+だけが受け取るので、2 人目以降の `WinEvaluationSnapshot` は `honba: 0, kyoutaku: 0` で作ります。
+親が `winners` に入っていれば連荘です（`judge_next_game_round`）。
+
+三家和（`:sanchahou`）は途中流局で、点数の移動はありません。親の連荘で本場が 1 つ増え、供託は次局へ残ります。
 
 ---
 

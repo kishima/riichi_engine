@@ -15,8 +15,8 @@ module RiichiEngine
       Mahjong::Flow::Rounds::RoundFlow.available_actions(state:, seat:, rule:)
     end
 
-    def self.resolve_pending_action(pending_actions, from_seat: nil)
-      Mahjong::Flow::Resolvers::ActionResolver.resolve(pending_actions, from_seat:)
+    def self.resolve_pending_action(pending_actions, from_seat: nil, rule: nil)
+      Mahjong::Flow::Resolvers::ActionResolver.resolve(pending_actions, from_seat:, rule:)
     end
 
     def self.judge_next_game_round(progress_snapshot:, round_end_info:, rule:)

@@ -97,7 +97,8 @@
 | type | 意味 | 必須キー |
 |---|---|---|
 | `:tsumo_agari` | ツモ和了 | `seat:` |
-| `:ron_agari` | ロン和了 | `seat:` |
+| `:ron_agari` | ロン和了 | `seat:`（ダブロンは `seats:` も。`resolve_pending_action` の返り値） |
+| `:sanchahou` | 三家和の流局（`triple_ron_draw` のとき 3 人のロン） | `seats:` |
 | `:skip` | パス（鳴き・ロン権を放棄） | `seat:` |
 
 ---

@@ -76,6 +76,8 @@ module Mahjong
                  process_ron_agari(state, action, rule)
                when :kyuushu_kyuuhai
                  process_kyuushu_kyuuhai(state, action, rule)
+               when :sanchahou
+                 process_sanchahou(state, action, rule)
                else
                  raise Errors::InvalidActionError, "unsupported action: #{action[:type]}"
                end
@@ -341,18 +343,31 @@ module Mahjong
       [{ type: :tsumo_agari, seat: seat }]
     end
 
+    # seats: があれば全員の和了（ダブロン）。winners は放銃者の下家から順に並び、
+    # 先頭（頭はねなら和了る席）が winner_seat。
     def self.process_ron_agari(state, action, _rule)
-      seat = action[:seat]
+      from = state.last_dahai[:seat]
+      seats = Array(action[:seats] || action[:seat]).uniq.sort_by { |seat| (seat - from) % 4 }
       state.phase = :round_end
       set_round_end_info(
         state,
         result_type: :ron_agari,
-        winner_seat: seat,
-        loser_seat: state.last_dahai[:seat],
+        winner_seat: seats.first,
+        loser_seat: from,
         chankan: !state.chankan_tile.nil?
       )
+      info = state.instance_variable_get(:@round_end_info)
+      info[:winners] = seats.map { |seat| { seat: seat } }
 
-      [{ type: :ron_agari, seat: seat, from: state.last_dahai[:seat] }]
+      seats.map { |seat| { type: :ron_agari, seat: seat, from: from } }
+    end
+
+    # 三家和: 3 人がロンを宣言した局は流局（途中流局）。
+    def self.process_sanchahou(state, action, _rule)
+      state.phase = :round_end
+      set_round_end_info(state, result_type: :sanchahou, draw_reason: :sanchahou, ron_seats: Array(action[:seats]).sort)
+
+      [{ type: :sanchahou, seats: Array(action[:seats]).sort }]
     end
 
     def self.advance_turn(state)

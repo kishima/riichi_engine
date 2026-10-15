@@ -22,6 +22,40 @@ RSpec.describe Mahjong::Flow::Games::GameFlow do
   end
 
   describe ".judge_next" do
+    it "ダブロンに親が入っていれば連荘し、本場を積む" do
+      snapshot = build_progress_snapshot(honba: 1, oya_index: 0)
+      info = Mahjong::Results::RoundEndInfo.new(result_type: :ron_agari, winners: [{ seat: 3 }, { seat: 0 }], tenpai_seats: [])
+
+      result = described_class.judge_next(progress_snapshot: snapshot, round_end_info: info, rule:)
+
+      expect(result.renchan).to be true
+      expect(result.next_oya_index).to eq(0)
+      expect(result.next_honba).to eq(2)
+    end
+
+    it "親の入らないダブロンは親が流れる" do
+      snapshot = build_progress_snapshot(honba: 1, oya_index: 0)
+      info = Mahjong::Results::RoundEndInfo.new(result_type: :ron_agari, winners: [{ seat: 1 }, { seat: 3 }], tenpai_seats: [])
+
+      result = described_class.judge_next(progress_snapshot: snapshot, round_end_info: info, rule:)
+
+      expect(result.renchan).to be false
+      expect(result.next_oya_index).to eq(1)
+      expect(result.next_honba).to eq(0)
+    end
+
+    it "三家和は途中流局として連荘し、本場を積む" do
+      snapshot = build_progress_snapshot(honba: 0, oya_index: 2, kyoku: 3)
+      info = Mahjong::Results::RoundEndInfo.new(result_type: :sanchahou, winners: [], tenpai_seats: [])
+
+      result = described_class.judge_next(progress_snapshot: snapshot, round_end_info: info, rule:)
+
+      expect(result.renchan).to be true
+      expect(result.next_oya_index).to eq(2)
+      expect(result.next_kyoku).to eq(3)
+      expect(result.next_honba).to eq(1)
+    end
+
     it "子の和了で親が流れる" do
       snapshot = build_progress_snapshot
       info = Mahjong::Results::RoundEndInfo.new(result_type: :ron, winners: [{ seat: 1 }], tenpai_seats: [])
