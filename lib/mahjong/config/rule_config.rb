@@ -30,7 +30,8 @@ module Mahjong
       "kuikae" => true,
       "riichi_ankan" => false,
       "kokushi_ankan_chankan" => false,
-      "pao_honba" => "discarder"
+      "pao_honba" => "discarder",
+      "tenhou_best_tile" => false
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）

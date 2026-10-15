@@ -53,6 +53,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `riichi_ankan` | Boolean | `false` | リーチ後の暗槓あり。自摸った牌の暗槓（送り槓は不可）で、待ちの牌の種類が変わらないときだけ |
 | `kokushi_ankan_chankan` | Boolean | `false` | 国士無双の暗槓の搶槓あり（暗槓した牌で国士無双を和了れる席にロンを出す） |
 | `pao_honba` | String | `"discarder"` | 包のある役満を責任者以外がロンしたときの積み棒を払う席。`"discarder"`（放銃者）か `"liable"`（責任者） |
+| `tenhou_best_tile` | Boolean | `false` | 天和では、手のどの牌を和了牌と見ても最も高い点になる牌を和了牌とする（偽なら自摸った牌） |
 
 ### Snapshots
 
