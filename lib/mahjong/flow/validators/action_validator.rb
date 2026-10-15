@@ -93,8 +93,10 @@ module Mahjong
         ValidationResult.new(valid: false, error: message)
       end
 
+      # 宣言した席のほかの選択肢（ロンもできる席のポンなど）とは比べない。
       def self.highest_priority_action?(state, action)
-        resolved = Resolvers::ActionResolver.resolve(state.pending_actions)
+        pending = state.pending_actions.merge(action[:seat] => [{ type: action[:type].to_sym }])
+        resolved = Resolvers::ActionResolver.resolve(pending)
         return false unless resolved
 
         resolved[:seat] == action[:seat] && resolved[:type].to_sym == action[:type].to_sym

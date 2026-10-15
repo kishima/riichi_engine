@@ -62,6 +62,34 @@ RSpec.describe Mahjong::Flow::Validators::ActionValidator do
     expect(result.error).to eq("higher priority action exists")
   end
 
+  it "ロンもできる席がロンでなく pon を選ぶのは valid と判定する" do
+    state.phase = :naki_wait
+    state.pending_actions = { 1 => [{ type: :ron_agari }, { type: :pon, tiles: %w[5m 5m] }] }
+
+    result = described_class.validate(state:, action: { type: :pon, seat: 1, tiles: %w[5m 5m] }, rule:)
+    expect(result.valid?).to be true
+  end
+
+  it "大明槓もできる席が pon を選ぶのは valid と判定する" do
+    state.phase = :naki_wait
+    state.pending_actions = { 1 => [{ type: :daiminkan }, { type: :pon, tiles: %w[5m 5m] }] }
+
+    result = described_class.validate(state:, action: { type: :pon, seat: 1, tiles: %w[5m 5m] }, rule:)
+    expect(result.valid?).to be true
+  end
+
+  it "ほかの席のロンがある間は、ロンもできる席の pon も invalid と判定する" do
+    state.phase = :naki_wait
+    state.pending_actions = {
+      1 => [{ type: :ron_agari }, { type: :pon, tiles: %w[5m 5m] }],
+      2 => [{ type: :ron_agari }]
+    }
+
+    result = described_class.validate(state:, action: { type: :pon, seat: 1, tiles: %w[5m 5m] }, rule:)
+    expect(result.valid?).to be false
+    expect(result.error).to eq("higher priority action exists")
+  end
+
   it "リーチ中の pon を invalid と判定する" do
     state.phase = :naki_wait
     state.riichi_flags[1] = true
