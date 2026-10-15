@@ -33,6 +33,15 @@ module Mahjong
           )
         end
 
+        # サドンデスの延長戦: 親を含む複数人のロンの連荘だけは続ける
+        if sudden_death_round?(progress_snapshot, rule) && reached_threshold?(scores, rule) &&
+           !(info.winners.size >= 2 && info.winners.any? { |w| w[:seat] == progress_snapshot.oya_index })
+          return Results::GameFlowResult.new(
+            action: :game_end, reason: :sudden_death,
+            next_bakaze: nil, next_kyoku: nil, next_honba: nil, next_oya_index: nil, renchan: true
+          )
+        end
+
         return Results::GameFlowResult.new(
           action: :next_round, reason: :renchan,
           next_bakaze: progress_snapshot.bakaze, next_kyoku: progress_snapshot.kyoku, next_honba: next_honba, next_oya_index: progress_snapshot.oya_index, renchan: true
@@ -46,6 +55,18 @@ module Mahjong
       if next_kyoku > 4
         next_kyoku = 1
         next_bakaze = next_bakaze_value(progress_snapshot.bakaze)
+      end
+
+      if sudden_death_round?(progress_snapshot, rule)
+        reason = if reached_threshold?(scores, rule) then :sudden_death
+                 elsif progress_snapshot.kyoku >= 4 then :normal_end
+                 end
+        if reason
+          return Results::GameFlowResult.new(
+            action: :game_end, reason: reason,
+            next_bakaze: nil, next_kyoku: nil, next_honba: nil, next_oya_index: nil, renchan: false
+          )
+        end
       end
 
       if should_end_game?(next_bakaze, scores, rule)
@@ -155,7 +176,10 @@ module Mahjong
     def self.should_end_game?(next_bakaze, scores, rule)
       case rule.game_type
       when "tonpuu", "tonpuusen"
-        next_bakaze == "nan"
+        return false if next_bakaze == "ton"
+        return false if next_bakaze == "nan" && rule.nan_iri? && scores.values.max < rule.nishi_iri_threshold
+
+        true
       when "hanchan"
         if next_bakaze == "sha"
           return false if rule.nishi_iri? && scores.values.max < rule.nishi_iri_threshold
@@ -185,12 +209,37 @@ module Mahjong
       all_last_oya_stop(progress_snapshot, round_end_info, scores, rule) == :all_last_oya_agari
     end
 
+    # オーラス: 半荘の南4局・東風戦の東4局と、サドンデスの延長戦の 4 局目（その後が無い局）。
+    # 延長戦がある（半荘の nishi_iri・東風戦の nan_iri）なら、親が nishi_iri_threshold に届いていなければ
+    # 止めない（止めずに終われば延長戦に入るはずの点数なので）。
     def self.all_last_oya_top?(progress_snapshot, scores, rule)
+      tonpuu = %w[tonpuu tonpuusen].include?(rule.game_type)
       is_all_last = (progress_snapshot.bakaze == "nan" && progress_snapshot.kyoku == 4 && rule.game_type == "hanchan") ||
-                    (progress_snapshot.bakaze == "ton" && progress_snapshot.kyoku == 4 && %w[tonpuu tonpuusen].include?(rule.game_type))
+                    (progress_snapshot.bakaze == "ton" && progress_snapshot.kyoku == 4 && tonpuu) ||
+                    (sudden_death_round?(progress_snapshot, rule) && progress_snapshot.kyoku == 4)
       return false unless is_all_last
 
-      scores[progress_snapshot.oya_index] == scores.values.max && scores[progress_snapshot.oya_index].positive?
+      oya_score = scores[progress_snapshot.oya_index]
+      return false unless oya_score == scores.values.max && oya_score.positive?
+      return false if extra_round?(rule) && oya_score < rule.nishi_iri_threshold
+
+      true
+    end
+
+    # 延長戦があるルールか（半荘の西入・東風戦の南入）。
+    def self.extra_round?(rule)
+      rule.game_type == "hanchan" ? rule.nishi_iri? : rule.nan_iri?
+    end
+
+    # いまの局がサドンデスの延長戦か（sudden_death で、半荘の西場・東風戦の南場）。
+    def self.sudden_death_round?(progress_snapshot, rule)
+      return false unless rule.sudden_death? && extra_round?(rule)
+
+      progress_snapshot.bakaze == (rule.game_type == "hanchan" ? "sha" : "nan")
+    end
+
+    def self.reached_threshold?(scores, rule)
+      scores.values.max >= rule.nishi_iri_threshold
     end
 
     def self.normalize_round_end_info(info)

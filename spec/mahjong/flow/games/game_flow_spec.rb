@@ -261,6 +261,88 @@ RSpec.describe Mahjong::Flow::Games::GameFlow do
     end
   end
 
+  describe "南入・サドンデス（nan_iri・sudden_death）" do
+    def info(type, winners: [], tenpai: [])
+      Mahjong::Results::RoundEndInfo.new(result_type: type, winners: winners.map { |s| { seat: s } }, tenpai_seats: tenpai)
+    end
+
+    def judge(rule, info, **snap)
+      described_class.judge_next(progress_snapshot: build_progress_snapshot(**snap), round_end_info: info, rule:)
+    end
+
+    let(:tonpuu) { Mahjong::Config::RuleConfig.new("game_type" => "tonpuu", "nan_iri" => true) }
+    let(:tonpuu_sd) { Mahjong::Config::RuleConfig.new("game_type" => "tonpuu", "nan_iri" => true, "sudden_death" => true) }
+    let(:hanchan_sd) { Mahjong::Config::RuleConfig.new("nishi_iri" => true, "sudden_death" => true) }
+    let(:low) { [26_000, 25_000, 25_000, 24_000] }
+
+    it "東風戦の東4局の後、誰も 30000 に届いていなければ nan_iri で南場へ（既定は終わる）" do
+      flow = judge(tonpuu, info(:ron, winners: [1]), bakaze: "ton", kyoku: 4, oya_index: 3, scores: low)
+      expect([flow.action, flow.next_bakaze, flow.next_kyoku]).to eq([:next_round, "nan", 1])
+
+      flow = judge(Mahjong::Config::RuleConfig.new("game_type" => "tonpuu"), info(:ron, winners: [1]), bakaze: "ton", kyoku: 4, oya_index: 3, scores: low)
+      expect(flow.action).to eq(:game_end)
+    end
+
+    it "東風戦の東4局の後、30000 に届いた人がいれば南場に入らない" do
+      flow = judge(tonpuu, info(:ron, winners: [1]), bakaze: "ton", kyoku: 4, oya_index: 3, scores: [20_000, 31_000, 25_000, 24_000])
+
+      expect([flow.action, flow.reason]).to eq(%i[game_end normal_end])
+    end
+
+    it "サドンデスなしの南場は、親が流れるときに 30000 以上がいれば終わる（連荘なら続く）" do
+      flow = judge(tonpuu, info(:ron, winners: [0]), bakaze: "nan", kyoku: 1, oya_index: 0, scores: [31_000, 23_000, 23_000, 23_000])
+      expect(flow.action).to eq(:next_round)
+
+      flow = judge(tonpuu, info(:ron, winners: [1]), bakaze: "nan", kyoku: 1, oya_index: 0, scores: [19_000, 31_000, 25_000, 25_000])
+      expect([flow.action, flow.reason]).to eq(%i[game_end normal_end])
+    end
+
+    it "サドンデスなら、親の連荘でも 30000 以上になった局で終わる" do
+      flow = judge(tonpuu_sd, info(:ron, winners: [0]), bakaze: "nan", kyoku: 1, oya_index: 0, scores: [31_000, 23_000, 23_000, 23_000])
+      expect([flow.action, flow.reason]).to eq(%i[game_end sudden_death])
+
+      flow = judge(hanchan_sd, info(:ryuukyoku, tenpai: [0, 2]), bakaze: "sha", kyoku: 2, oya_index: 1, scores: [20_000, 25_500, 30_500, 24_000])
+      expect([flow.action, flow.reason]).to eq(%i[game_end sudden_death])
+    end
+
+    it "サドンデスでも、親を含む複数人のロンで親が連荘するときは続ける" do
+      flow = judge(hanchan_sd, info(:ron, winners: [1, 2]), bakaze: "sha", kyoku: 2, oya_index: 1, scores: [10_000, 29_000, 32_000, 29_000])
+
+      expect([flow.action, flow.renchan, flow.next_kyoku]).to eq([:next_round, true, 2])
+    end
+
+    it "サドンデスの延長は 1 つの場だけ: 東風戦は南4局、半荘は西4局の後に終わる" do
+      flow = judge(tonpuu_sd, info(:ron, winners: [1]), bakaze: "nan", kyoku: 4, oya_index: 3, scores: low)
+      expect([flow.action, flow.reason]).to eq(%i[game_end normal_end])
+
+      flow = judge(hanchan_sd, info(:ron, winners: [1]), bakaze: "sha", kyoku: 4, oya_index: 3, scores: low)
+      expect([flow.action, flow.reason]).to eq(%i[game_end normal_end])
+    end
+
+    it "sudden_death なしの西4局の後は西1局に戻る（0.1.0 と同じ）" do
+      flow = judge(Mahjong::Config::RuleConfig.new("nishi_iri" => true), info(:ron, winners: [1]), bakaze: "sha", kyoku: 4, oya_index: 3, scores: low)
+
+      expect([flow.action, flow.next_bakaze, flow.next_kyoku]).to eq([:next_round, "sha", 1])
+    end
+
+    it "延長戦があるルールでは、アガリ止めは親が 30000 以上のときだけ" do
+      flow = judge(Mahjong::Config::RuleConfig.new("nishi_iri" => true), info(:ron, winners: [3]), bakaze: "nan", kyoku: 4, oya_index: 3, scores: [20_000, 21_000, 29_000, 30_000])
+      expect([flow.action, flow.reason]).to eq(%i[game_end all_last_oya_agari])
+
+      flow = judge(Mahjong::Config::RuleConfig.new("nishi_iri" => true), info(:ron, winners: [3]), bakaze: "nan", kyoku: 4, oya_index: 3, scores: [20_000, 21_000, 27_000, 29_000])
+      expect([flow.action, flow.renchan]).to eq([:next_round, true])
+
+      flow = judge(rule, info(:ron, winners: [3]), bakaze: "nan", kyoku: 4, oya_index: 3, scores: [20_000, 21_000, 27_000, 29_000])
+      expect(flow.reason).to eq(:all_last_oya_agari)
+    end
+
+    it "サドンデスの延長戦の 4 局目は、首位の親の複数人ロンでもアガリ止め" do
+      flow = judge(hanchan_sd, info(:ron, winners: [3, 1]), bakaze: "sha", kyoku: 4, oya_index: 3, scores: [10_000, 29_000, 29_000, 32_000])
+
+      expect([flow.action, flow.reason]).to eq(%i[game_end all_last_oya_agari])
+    end
+  end
+
   describe ".calculate_final_result" do
     it "順位とウマオカを反映した最終結果を返す" do
       snapshot = build_final_result_snapshot(scores: [35_000, 28_000, 22_000, 15_000])

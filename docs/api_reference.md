@@ -54,6 +54,8 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `kokushi_ankan_chankan` | Boolean | `false` | 国士無双の暗槓の搶槓あり（暗槓した牌で国士無双を和了れる席にロンを出す） |
 | `pao_honba` | String | `"discarder"` | 包のある役満を責任者以外がロンしたときの積み棒を払う席。`"discarder"`（放銃者）か `"liable"`（責任者） |
 | `tenhou_best_tile` | Boolean | `false` | 天和では、手のどの牌を和了牌と見ても最も高い点になる牌を和了牌とする（偽なら自摸った牌） |
+| `nan_iri` | Boolean | `false` | 東風戦の南入あり（東4局の後に誰も `nishi_iri_threshold` に届いていなければ南場へ。東風戦は西場には入らない） |
+| `sudden_death` | Boolean | `false` | 延長戦（半荘の西場・東風戦の南場）をサドンデスにする。誰かが `nishi_iri_threshold` 以上になった局の後に終わり（理由 `:sudden_death`。ただし親を含む複数人のロンで親が連荘するときは続ける）、延長は 1 つの場だけ（その場の 4 局の後に終わる） |
 
 ### Snapshots
 
