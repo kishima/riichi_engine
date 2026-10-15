@@ -36,7 +36,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `kiriage_mangan` | Boolean | `false` | 切り上げ満貫あり |
 | `triple_ron_draw` | Boolean | `true` | 三家和で流局 |
 | `double_ron` | Boolean | `true` | ダブロンあり |
-| `tobi` | Boolean | `true` | トビあり（点数が0点以下でゲーム終了） |
+| `tobi` | Boolean | `true` | トビあり（誰かの点数が 0 点未満になったらゲーム終了。ちょうど 0 点は続行） |
 | `nishi_iri` | Boolean | `false` | 西入あり |
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
