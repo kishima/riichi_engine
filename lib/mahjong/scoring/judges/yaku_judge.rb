@@ -51,7 +51,7 @@ module Mahjong
         def self.result_sort_key(result, context)
           [
             result.yakuman? ? 1 : 0,
-            result.total_han || result.yaku.sum { |entry| entry.han == -1 ? 13 : entry.han },
+            result.total_han || result.yaku.sum { |entry| entry.han.negative? ? -13 * entry.han : entry.han },
             estimated_fu(context, result),
             result.yaku.length
           ]
