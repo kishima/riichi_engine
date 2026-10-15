@@ -102,6 +102,18 @@ RSpec.describe Mahjong::Scoring::Calculators::ScoreCalculator do
         expect(result.payments[:ron_pay]).to eq(32000)
         expect(result.level).to eq("役満")
       end
+
+      it "役満 2 つの親ツモ = 32000点オール（yakuman_count: 2）" do
+        result = described_class.calculate(fu: 0, han: 0, is_oya: true, agari_type: :tsumo, is_yakuman: true, yakuman_count: 2)
+        expect(result.payments[:ko_pays]).to eq(32000)
+        expect(result.level).to eq("2倍役満")
+      end
+
+      it "yakuman_count は役満でなければ使わない" do
+        result = described_class.calculate(fu: 30, han: 13, is_oya: false, agari_type: :ron, yakuman_count: 2)
+        expect(result.payments[:ron_pay]).to eq(32000)
+        expect(result.level).to eq("数え役満")
+      end
     end
 
     context "ルール差分" do

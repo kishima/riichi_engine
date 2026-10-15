@@ -51,7 +51,8 @@ module Mahjong
               honba: snapshot.honba,
               kyoutaku: snapshot.kyoutaku,
               is_yakuman: yaku_result.yakuman?,
-              rule: rule
+              rule: rule,
+              yakuman_count: yakuman_count(yaku_result, rule)
             )
 
             [context, yaku_result, fu, score_result]
@@ -79,6 +80,14 @@ module Mahjong
 
           [winner_info, score_result]
         end
+
+        # 複合役満（multiple_yakuman）なら成立した役満の数、そうでなければ 1。
+        def self.yakuman_count(yaku_result, rule)
+          return 1 unless yaku_result.yakuman? && rule&.multiple_yakuman?
+
+          [yaku_result.yaku.size, 1].max
+        end
+        private_class_method :yakuman_count
 
         def self.winning_hand_tiles(state, seat, agari_type, agari_tile)
           tiles = state.hands[seat].tiles.dup

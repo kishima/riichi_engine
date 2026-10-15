@@ -7,6 +7,7 @@ RSpec.describe Mahjong::Config::RuleConfig do
       expect(config.initial_score).to eq(25000)
       expect(config.kuitan).to be true
       expect(config.double_yakuman).to be false
+      expect(config.multiple_yakuman?).to be false
     end
 
     it "カスタム設定でデフォルトを上書きできる" do

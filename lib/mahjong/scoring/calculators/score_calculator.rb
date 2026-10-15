@@ -2,15 +2,17 @@ module Mahjong
   module Scoring
     module Calculators
       class ScoreCalculator
-        def self.calculate(fu:, han:, is_oya:, agari_type:, honba: 0, kyoutaku: 0, is_yakuman: false, rule: nil)
-          base = base_points(fu, han, is_yakuman, rule)
+        # yakuman_count: 役満の数（複合役満のとき 2 以上。基本点が役満の数だけ倍になる）
+        def self.calculate(fu:, han:, is_oya:, agari_type:, honba: 0, kyoutaku: 0, is_yakuman: false, rule: nil, yakuman_count: 1)
+          count = is_yakuman ? [yakuman_count.to_i, 1].max : 1
+          base = base_points(fu, han, is_yakuman, rule) * count
           payments = compute_payments(base, is_oya, agari_type, honba)
 
           ValueObjects::ScoreResult.new(
             fu: fu,
             han: han,
             base_points: base,
-            level: score_level(base, han, is_yakuman),
+            level: score_level(base, han, is_yakuman, count),
             is_oya: is_oya,
             agari_type: agari_type,
             payments: payments,
@@ -51,7 +53,8 @@ module Mahjong
           end
         end
 
-        def self.score_level(base, han, is_yakuman)
+        def self.score_level(base, han, is_yakuman, yakuman_count = 1)
+          return "#{yakuman_count}倍役満" if is_yakuman && yakuman_count > 1
           return "役満" if is_yakuman
           return "数え役満" if han >= 13 && base == 8000
 
