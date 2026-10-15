@@ -394,11 +394,14 @@ module Mahjong
       oya_seat = state.oya_seat || 0
       jikaze = %w[ton nan sha pei][(seat - oya_seat) % 4]
 
-      forms.any? do |form|
-        machi_type = machi_results.find do |result|
+      candidates = forms.flat_map do |form|
+        machi_types = machi_results.select do |result|
           matching_form?(result.agari_form, form) && result.tile_index == Tiles::TileSet.tile_index(agari_tile)
-        end&.machi_type
+        end.map(&:machi_type).uniq
+        (machi_types.empty? ? [:tanki] : machi_types).map { |machi_type| [form, machi_type] }
+      end
 
+      candidates.any? do |form, machi_type|
         context = Scoring::ValueObjects::YakuContext.new(
           agari_form: form,
           agari_tile: agari_tile,
@@ -418,7 +421,7 @@ module Mahjong
           is_chankan: extra_flags[:chankan] == true,
           dora_tiles: state.wanpai ? state.wanpai.dora_tiles : [],
           uradora_tiles: state.riichi_flags[seat] && state.wanpai ? state.wanpai.uradora_tiles : [],
-          machi_type: machi_type || :tanki,
+          machi_type: machi_type,
           rule: rule
         )
 

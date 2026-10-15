@@ -8,11 +8,14 @@ module Mahjong
           forms = Scoring::Judges::AgariJudge.all_forms(Tiles::TileSet.to_34(full_hand_tiles))
           machi_results = Scoring::Judges::MachiJudge.find_machi(Tiles::TileSet.to_34(concealed_hand_tiles))
 
-          scored = forms.filter_map do |form|
-            machi_type = machi_results.find do |result|
+          candidates = forms.flat_map do |form|
+            machi_types = machi_results.select do |result|
               matching_form?(result.agari_form, form) && result.tile_index == Tiles::TileSet.tile_index(agari_tile)
-            end&.machi_type
+            end.map(&:machi_type).uniq
+            (machi_types.empty? ? [:tanki] : machi_types).map { |machi_type| [form, machi_type] }
+          end
 
+          scored = candidates.filter_map do |form, machi_type|
             context = ValueObjects::YakuContext.new(
               agari_form: form,
               agari_tile: agari_tile,
@@ -32,7 +35,7 @@ module Mahjong
               is_chankan: extra_flags[:chankan] == true,
               dora_tiles: dora_tiles_for(state.dora_hyouji),
               uradora_tiles: dora_tiles_for(state.uradora_hyouji),
-              machi_type: machi_type || :tanki,
+              machi_type: machi_type,
               rule: rule
             )
 

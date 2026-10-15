@@ -42,20 +42,25 @@ module Mahjong
           when :chiitoitsu, :kokushi
             results << { type: :tanki, form: form }
           when :regular
-            results << { type: regular_machi_type(form.parsed_hand, agari_idx), form: form }
+            regular_machi_types(form.parsed_hand, agari_idx).each do |type|
+              results << { type: type, form: form }
+            end
           end
         end
 
         results
       end
 
-      def self.regular_machi_type(parsed, agari_idx)
-        return :tanki if parsed.jantou_index == agari_idx
+      # 同じ和了形でも、和了牌が雀頭と面子のどれに入るかで待ちが変わる（55m + 345m の 5m は
+      # 単騎でも両面でもある）。取り得る待ちをすべて返す。
+      def self.regular_machi_types(parsed, agari_idx)
+        types = []
+        types << :tanki if parsed.jantou_index == agari_idx
 
         parsed.mentsu_indices.each do |m|
           case m[:type]
           when :koutsu
-            return :shanpon if m[:index] == agari_idx
+            types << :shanpon if m[:index] == agari_idx
           when :shuntsu
             base = m[:index]
             next unless agari_idx >= base && agari_idx <= base + 2
@@ -63,14 +68,17 @@ module Mahjong
             pos = agari_idx - base
             suit_pos = base % 9
 
-            return :kanchan if pos == 1
-            return :penchan if pos == 0 && suit_pos == 6
-            return :penchan if pos == 2 && suit_pos == 0
-            return :ryanmen
+            types << if pos == 1
+                       :kanchan
+                     elsif (pos == 0 && suit_pos == 6) || (pos == 2 && suit_pos == 0)
+                       :penchan
+                     else
+                       :ryanmen
+                     end
           end
         end
 
-        :tanki
+        types.empty? ? [:tanki] : types.uniq
       end
       end
     end
