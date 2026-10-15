@@ -34,7 +34,7 @@ module Mahjong
         ankan = available.find { |action| action[:type] == :ankan }
         return ankan if ankan && should_ankan?(state, seat)
 
-        { type: :dahai, tile: Selectors::DahaiSelector.select(hand: state.hands[seat], state: state, level: level) }
+        { type: :dahai, tile: Selectors::DahaiSelector.select(hand: state.hands[seat], state: state, level: level, seat: seat) }
       end
 
       def think_naki(state, seat, available, _rule)

@@ -2,9 +2,11 @@ module Mahjong
   module Cpu
     module Selectors
       class DahaiSelector
-      def self.select(hand:, state:, level:)
+      # seat: 手の持ち主（省略すると手番の席）。その席の副露を面子として数える。
+      def self.select(hand:, state:, level:, seat: state.current_seat)
         visible = collect_visible_tiles(state)
-        evals = Analysis::TileEvaluator.evaluate_all_discards(hand, visible_tiles: visible)
+        melds = Array(state.fuuros && state.fuuros[seat]).size
+        evals = Analysis::TileEvaluator.evaluate_all_discards(hand, visible_tiles: visible, melds: melds)
 
         case level
         when 1 then select_easy(evals, hand)

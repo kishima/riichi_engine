@@ -24,13 +24,14 @@ module Mahjong
 
       private_class_method def self.judge_normal(options, state, seat)
         hand = state.hands[seat]
-        current_shanten = Analysis::Shanten.calculate(hand.to_34)
+        melds = Array(state.fuuros && state.fuuros[seat]).size
+        current_shanten = Analysis::Shanten.calculate(hand.to_34, melds: melds)
 
         options.each do |option|
           next if option[:type] == :skip
           next if should_keep_menzen?(hand, current_shanten)
 
-          return option if simulate_naki_shanten(hand, option) < current_shanten
+          return option if simulate_naki_shanten(hand, option, melds) < current_shanten
         end
 
         nil
@@ -40,14 +41,15 @@ module Mahjong
         judge_normal(options, state, seat)
       end
 
-      private_class_method def self.simulate_naki_shanten(hand, naki_option)
+      # 鳴いた後（打牌の前）の向聴数。鳴いた面子は副露として数える。
+      private_class_method def self.simulate_naki_shanten(hand, naki_option, melds)
         tiles = Array(naki_option[:tiles]).map { |tile| Tiles::Tile.new(tile) }
 
         case naki_option[:type]
         when :pon, :chi
-          Analysis::Shanten.calculate(hand.remove_tiles(tiles).to_34) - 2
+          Analysis::Shanten.calculate(hand.remove_tiles(tiles).to_34, melds: melds + 1)
         else
-          Analysis::Shanten.calculate(hand.to_34)
+          Analysis::Shanten.calculate(hand.to_34, melds: melds)
         end
       end
 

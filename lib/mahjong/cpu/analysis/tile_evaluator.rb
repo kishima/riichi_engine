@@ -4,15 +4,16 @@ module Mahjong
       EvalResult = Data.define(:tile, :shanten, :ukeire)
 
       class TileEvaluator
-        def self.evaluate_all_discards(hand, visible_tiles: [])
+        # melds: 副露の数（向聴数と受け入れは副露を面子として数える）
+        def self.evaluate_all_discards(hand, visible_tiles: [], melds: 0)
           results = {}
           remaining = build_remaining_counts(visible_tiles + hand.tiles)
 
           hand.tiles.map(&:to_s).uniq.each do |tile_str|
             new_hand = hand.remove(Tiles::Tile.new(tile_str))
             tiles_34 = new_hand.to_34
-            shanten = Shanten.calculate(tiles_34)
-            ukeire = count_ukeire(tiles_34, shanten, remaining)
+            shanten = Shanten.calculate(tiles_34, melds: melds)
+            ukeire = count_ukeire(tiles_34, shanten, remaining, melds: melds)
 
             results[tile_str] = EvalResult.new(
               tile: tile_str,
@@ -24,7 +25,7 @@ module Mahjong
           results
         end
 
-        def self.count_ukeire(tiles_34, current_shanten, remaining)
+        def self.count_ukeire(tiles_34, current_shanten, remaining, melds: 0)
           count = 0
 
           34.times do |i|
@@ -32,7 +33,7 @@ module Mahjong
             next if remaining[i] <= 0
 
             tiles_34[i] += 1
-            count += remaining[i] if Shanten.calculate(tiles_34) < current_shanten
+            count += remaining[i] if Shanten.calculate(tiles_34, melds: melds) < current_shanten
             tiles_34[i] -= 1
           end
 
