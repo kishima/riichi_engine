@@ -36,7 +36,7 @@ module Mahjong
 
         sorted = candidates.sort_by do |tile_str, result|
           [
-            result.ukeire,
+            -result.ukeire,
             danger_score(Tiles::Tile.new(tile_str), state),
             tile_str
           ]
