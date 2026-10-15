@@ -201,6 +201,7 @@ module Mahjong
       reveal_pending_kan_dora(state)
 
       naki_options = Detectors::NakiDetector.detect(state: state, dahai_seat: seat, dahai_tile: tile, rule: rule)
+      mark_passed_waits(state, seat, tile, naki_options)
       abortive = abortive_draw(state, rule)
       # 途中流局になる打牌に残るのはロンだけ（ロンが無ければその場で流局）
       naki_options = ron_options(naki_options) if abortive
@@ -237,6 +238,21 @@ module Mahjong
       end
       [{ type: :skip, seat: seat }]
     end
+
+    # 打牌が待ちの牌なのにロンの候補が出ない席（役が無い、すでにフリテン）も、その牌を見逃したことになる。
+    # 同巡内フリテン（リーチ中ならリーチ後の見逃しのフリテン）にする。ロンの候補が出た席は process_skip で同じにする。
+    def self.mark_passed_waits(state, dahai_seat, tile, naki_options)
+      index = Tiles::TileSet.tile_index(tile)
+      4.times do |seat|
+        next if seat == dahai_seat
+        next if Array(naki_options[seat]).any? { |option| option[:type] == :ron_agari }
+        next unless Scoring::Judges::MachiJudge.machi_tile_indices(state.hands[seat].to_34).include?(index)
+
+        state.dojun_furiten_flags[seat] = true
+        state.riichi_furiten_flags[seat] = true if state.riichi_flags[seat]
+      end
+    end
+    private_class_method :mark_passed_waits
 
     def self.process_pon(state, action, rule)
       seat = action[:seat]
