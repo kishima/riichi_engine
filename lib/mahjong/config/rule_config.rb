@@ -23,7 +23,8 @@ module Mahjong
       "suukaikan" => false,
       "suucha_riichi" => false,
       "nagashi_mangan" => false,
-      "pao" => []
+      "pao" => [],
+      "minkan_dora_after_discard" => false
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）

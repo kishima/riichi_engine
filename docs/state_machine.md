@@ -242,7 +242,7 @@ end
 ```
 :ankan / :kakan / :daiminkan
   → 嶺上牌をドロー（rinshan_flag = true）
-  → 新しいドラ表示牌を公開
+  → 新しいドラ表示牌を公開（ルール minkan_dora_after_discard なら、明槓の分は次の打牌のとき）
   → :dahai フェーズへ（同じプレイヤーが続行）
   → :tsumo_agari で嶺上開花が成立
 ```

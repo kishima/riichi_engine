@@ -21,6 +21,8 @@ module Mahjong
     attr_accessor :dojun_furiten_flags, :riichi_furiten_flags
     # 包（責任払い）: { 和了る席 => { 役満の名前 => 責任を負う席 } }（ルール pao にある役満だけ）
     attr_accessor :pao_seats
+    # 明槓の、まだめくっていない新ドラの数（ルール minkan_dora_after_discard）
+    attr_accessor :pending_kan_dora
 
     def initialize
       @hands         = {}
@@ -41,6 +43,7 @@ module Mahjong
       @dojun_furiten_flags = { 0 => false, 1 => false, 2 => false, 3 => false }
       @riichi_furiten_flags = { 0 => false, 1 => false, 2 => false, 3 => false }
       @pao_seats = { 0 => {}, 1 => {}, 2 => {}, 3 => {} }
+      @pending_kan_dora = 0
       @junme         = 0
       @phase         = :tsumo
       @state_version = 0
@@ -93,7 +96,8 @@ module Mahjong
         first_turn_flags: first_turn_flags, kan_count: kan_count, kan_by_player: kan_by_player,
         pending_actions: pending_actions, rinshan_flag: rinshan_flag, chankan_tile: chankan_tile&.to_s,
         dojun_furiten_flags: dojun_furiten_flags, riichi_furiten_flags: riichi_furiten_flags,
-        pao_seats: pao_seats
+        pao_seats: pao_seats,
+        pending_kan_dora: pending_kan_dora
       }
       )
     end
@@ -153,6 +157,7 @@ module Mahjong
       state.dojun_furiten_flags = symbolize_int_hash(data["dojun_furiten_flags"])
       state.riichi_furiten_flags = symbolize_int_hash(data["riichi_furiten_flags"])
       state.pao_seats = deserialize_pao_seats(data["pao_seats"])
+      state.pending_kan_dora = data["pending_kan_dora"].to_i
       state
     rescue JSON::ParserError, ArgumentError, TypeError, KeyError => e
       raise Errors::EngineError, "RoundState の復元に失敗しました: #{e.message}"
