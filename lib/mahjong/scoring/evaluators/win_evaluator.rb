@@ -48,7 +48,8 @@ module Mahjong
               honba: snapshot.honba,
               kyoutaku: snapshot.kyoutaku,
               is_yakuman: yaku_result.yakuman?,
-              rule: rule
+              rule: rule,
+              pao: pao_parts(state, seat, yaku_result, rule)
             )
 
             [context, yaku_result, fu, score_result]
@@ -73,9 +74,34 @@ module Mahjong
             fuuro_tiles: context.fuuros.flat_map { |fuuro| fuuro.tiles.map(&:to_s) },
             agari_hai: agari_tile.to_s
           }
+          winner_info[:pao] = score_result.pao.map { |part| part.slice(:seat, :yaku) } if score_result.pao.any?
 
           [winner_info, score_result]
         end
+
+        # 包の分: ルール pao にある役満で、その席に責任者が記録されているもの
+        # （RoundState#pao_seats）。基本点は役満 1 つ分ずつ、手の基本点を超えない。
+        def self.pao_parts(state, seat, yaku_result, rule)
+          targets = Array(rule&.pao).map(&:to_s)
+          return [] if targets.empty? || !yaku_result.yakuman?
+
+          liable = (state.respond_to?(:pao_seats) && state.pao_seats && state.pao_seats[seat]) || {}
+          remaining = 8000 * yakuman_units(yaku_result, rule)
+          yaku_result.yaku.filter_map do |entry|
+            next unless targets.include?(entry.name) && liable.key?(entry.name) && remaining.positive?
+
+            base = [8000 * [-entry.han.to_i, 1].max, remaining].min
+            remaining -= base
+            { seat: liable[entry.name], yaku: entry.name, base_points: base }
+          end
+        end
+        private_class_method :pao_parts
+
+        # 手の役満の数（基本点 8000 の何倍か）。
+        def self.yakuman_units(_yaku_result, _rule)
+          1
+        end
+        private_class_method :yakuman_units
 
         def self.winning_hand_tiles(state, seat, agari_type, agari_tile)
           tiles = state.hands[seat].tiles.dup

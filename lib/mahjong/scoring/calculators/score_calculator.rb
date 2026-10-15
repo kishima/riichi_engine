@@ -2,7 +2,8 @@ module Mahjong
   module Scoring
     module Calculators
       class ScoreCalculator
-        def self.calculate(fu:, han:, is_oya:, agari_type:, honba: 0, kyoutaku: 0, is_yakuman: false, rule: nil)
+        # pao: 包の分 [{ seat:, base_points: }]（ScoreResult#score_changes が使う。payments は変えない）
+        def self.calculate(fu:, han:, is_oya:, agari_type:, honba: 0, kyoutaku: 0, is_yakuman: false, rule: nil, pao: [])
           base = base_points(fu, han, is_yakuman, rule)
           payments = compute_payments(base, is_oya, agari_type, honba)
 
@@ -17,7 +18,8 @@ module Mahjong
             total: payments[:total],
             kyoutaku_bonus: kyoutaku * 1000,
             honba: honba,
-            is_yakuman: is_yakuman
+            is_yakuman: is_yakuman,
+            pao: pao
           )
         end
 

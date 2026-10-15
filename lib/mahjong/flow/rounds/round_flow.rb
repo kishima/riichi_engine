@@ -223,7 +223,7 @@ module Mahjong
       [{ type: :skip, seat: seat }]
     end
 
-    def self.process_pon(state, action, _rule)
+    def self.process_pon(state, action, rule)
       seat = action[:seat]
       called_tile = state.last_dahai[:tile]
       tiles = action[:tiles] || pon_choices(state, seat, called_tile)
@@ -236,6 +236,7 @@ module Mahjong
         from_seat: state.last_dahai[:seat]
       )
       state.kawas[state.last_dahai[:seat]].mark_last_called!
+      record_pao(state, seat, state.fuuros[seat].last, rule)
       state.current_seat = seat
       state.phase = :dahai
       state.pending_actions = {}
@@ -317,7 +318,7 @@ module Mahjong
       [{ type: :kakan, seat: seat, tile: tile.to_s }]
     end
 
-    def self.process_daiminkan(state, action, _rule)
+    def self.process_daiminkan(state, action, rule)
       seat = action[:seat]
       tile = state.last_dahai[:tile]
       removed = Array.new(3, tile.to_s)
@@ -325,6 +326,7 @@ module Mahjong
       state.hands[seat] = state.hands[seat].remove_tiles(removed)
       state.fuuros[seat] << State::Fuuro.new(type: :daiminkan, tiles: (removed + [tile.to_s]).map { Tiles::Tile.new(_1) }, called_tile: tile, from_seat: state.last_dahai[:seat])
       state.kawas[state.last_dahai[:seat]].mark_last_called!
+      record_pao(state, seat, state.fuuros[seat].last, rule)
       state.current_seat = seat
       state.menzen_flags[seat] = false
       apply_kan_transition(state, seat, tile, open_kan: true, keep_turn: true)
@@ -353,6 +355,27 @@ module Mahjong
 
       [{ type: :ron_agari, seat: seat, from: state.last_dahai[:seat] }]
     end
+
+    # 包（ルール pao にある役満）: ポン・大明槓で 3 つ目の三元牌の面子（大三元）、
+    # 4 つ目の風牌の面子（大四喜）、大明槓で 4 つ目の槓（四槓子）を作らせた打牌者。
+    def self.record_pao(state, seat, fuuro, rule)
+      targets = Array(rule&.pao).map(&:to_s)
+      return if targets.empty?
+
+      fuuros = state.fuuros[seat]
+      tile = fuuro.tiles.first
+      dragon_sets = fuuros.count { |f| !f.chi? && f.tiles.first.sangenpai? }
+      wind_sets = fuuros.count { |f| !f.chi? && f.tiles.first.kazehai? }
+      found = []
+      found << "daisangen" if tile.sangenpai? && dragon_sets == 3
+      found << "daisuushii" if tile.kazehai? && wind_sets == 4
+      found << "suukantsu" if fuuro.daiminkan? && fuuros.count(&:kan?) == 4
+
+      state.pao_seats ||= { 0 => {}, 1 => {}, 2 => {}, 3 => {} }
+      state.pao_seats[seat] ||= {}
+      (found & targets).each { |yaku| state.pao_seats[seat][yaku] = fuuro.from_seat }
+    end
+    private_class_method :record_pao
 
     def self.advance_turn(state)
       if state.wall.remaining <= 0
