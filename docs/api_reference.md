@@ -40,6 +40,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nishi_iri` | Boolean | `false` | 西入あり |
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
+| `riichi_ankan` | Boolean | `false` | リーチ後の暗槓あり。自摸った牌の暗槓（送り槓は不可）で、待ちの牌の種類が変わらないときだけ |
 
 ### Snapshots
 
