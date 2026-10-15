@@ -1,30 +1,27 @@
-# Let a seat choose a lower call over its own other options
+# ロンもできる席が、ポンを選べるようにする
 
-Branch: `fix/call-own-options`
+ブランチ: `fix/call-own-options`
 
-## What is wrong
+## 何が誤りか
 
-`ActionValidator.highest_priority_action?` resolves all pending actions, the
-calling seat's own other options included. A seat that can both ron and pon a
-discard (or daiminkan and pon) is therefore told "higher priority action
-exists" when it chooses the pon — although no other seat has a higher claim.
-The same seat could only pon by skipping, which is not possible either.
+`ActionValidator.highest_priority_action?` は、宣言した席自身のほかの選択肢も含めて保留中の宣言を
+すべて解決します。そのため、ある打牌にロンもポンもできる席（または大明槓もポンもできる席）がポンを選ぶと、
+ほかの席に優先する宣言が無いのに "higher priority action exists" で弾かれます。その席がポンをするには
+ロンを見送るしかありませんが、見送り（skip）をすればポンもできません。
 
-## Reproduce
+## 再現
 
-`pending_actions = { 1 => [{ type: :ron_agari }, { type: :pon, ... }] }`, seat 1
-declares pon: invalid. Specs in `action_validator_spec.rb` (ron + pon,
-daiminkan + pon, and that another seat's ron still blocks the pon).
+`pending_actions = { 1 => [{ type: :ron_agari }, { type: :pon, ... }] }` で席 1 がポンを宣言すると不正になります。
+`action_validator_spec.rb` の spec（ロン＋ポン、大明槓＋ポン、ほかの席のロンがあればポンは弾かれること）。
 
-## Fix
+## 直し
 
-Compare the declared action with the other seats' pending actions only (the
-declaring seat's entry is replaced by the declared action).
+宣言したアクションを、ほかの席の保留中の宣言とだけ比べます（宣言した席の分は、宣言したアクションに置き換えます）。
 
-## Compatibility
+## 互換性
 
-Calls that were wrongly rejected are accepted. No API change.
+誤って弾かれていた鳴きが通るようになります。API の変更はありません。
 
 ---
 
-ロン (や大明槓) もできる席がポンを選ぶと「より優先の宣言がある」と弾かれていた。自分のほかの選択肢とは比べないようにした。
+ロン（や大明槓）もできる席がポンを選ぶと「より優先の宣言がある」と弾かれていた。自分のほかの選択肢とは比べないようにした。

@@ -1,31 +1,27 @@
-# Count four identical sequences as ryanpeiko
+# 同じ順子 4 つを二盃口として数える
 
-Branch: `fix/ryanpeiko-four-sequences`
+ブランチ: `fix/ryanpeiko-four-sequences`
 
-## What is wrong
+## 何が誤りか
 
-`Iipeiko.count_shuntsu_pairs` counts the sequences that occur at least twice,
-so four copies of one sequence (`678p 678p 678p 678p 22s`) make one pair: the
-hand gets iipeiko instead of ryanpeiko, and as iipeiko it loses to the reading
-with three concealed triplets (666p 777p 888p 678p).
+`Iipeiko.count_shuntsu_pairs` は 2 回以上出る順子の種類を数えるので、同じ順子 4 つ（`678p 678p 678p 678p 22s`）が
+1 組になります。手は二盃口ではなく一盃口になり、一盃口としては三暗刻の取り方（666p 777p 888p 678p）に負けます。
 
-## Reproduce
+## 再現
 
-Spec "同じ順子 4 つも二盃口と判定する" in `pattern_yaku_spec.rb`.
+`pattern_yaku_spec.rb` の spec「同じ順子 4 つも二盃口と判定する」。
 
-## Fix
+## 直し
 
-Count pairs: `c / 2` per sequence. Three copies still make one pair (iipeiko;
-spec added).
+順子の種類ごとに `c / 2` 組と数えます。同じ順子 3 つは今までどおり 1 組（一盃口。spec を足しました）。
 
-## Rule
+## ルール
 
-Four identical sequences are ryanpeiko (Tenhou, M-League).
+同じ順子 4 つは二盃口（天鳳、M リーグ）。
 
-## Compatibility
+## 互換性
 
-Only such hands change. Found by the comparison with the Python `mahjong`
-package.
+その形の手だけが変わります。Python の `mahjong` パッケージとの突き合わせで見つけました。
 
 ---
 

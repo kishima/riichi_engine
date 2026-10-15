@@ -18,8 +18,10 @@ module PythonMahjongCompat
   # adds up several yakuman in one hand; riichi_engine does with
   # multiple_yakuman (default false), set here. MULTIPLE_YAKUMAN=0 compares
   # with the default instead (the multiple yakuman then show as rule
-  # differences).
-  RULE = { "renpuu_jantou_fu" => 4, "multiple_yakuman" => ENV["MULTIPLE_YAKUMAN"] != "0" }.freeze
+  # differences). DOUBLE_YAKUMAN=1 sets double_yakuman on both sides (the
+  # Python package's has_double_yakuman: the same four hands).
+  RULE = { "renpuu_jantou_fu" => 4, "multiple_yakuman" => ENV["MULTIPLE_YAKUMAN"] != "0",
+           "double_yakuman" => ENV["DOUBLE_YAKUMAN"] == "1" }.freeze
 
   KINDS = (%w[m p s].flat_map { |s| (1..9).map { |n| "#{n}#{s}" } } + (1..7).map { |n| "#{n}z" }).freeze
   WINDS = %w[ton nan sha pei].freeze

@@ -5,6 +5,7 @@ JSON array of results on stdout, in the same order. Used only by the
 comparison spec; not part of the gem.
 """
 import json
+import os
 import sys
 
 from mahjong.constants import EAST, SOUTH, WEST, NORTH
@@ -77,7 +78,8 @@ def evaluate(case):
     dora = [alloc.take(t) for t in case["dora_hyouji"]]
     ura = [alloc.take(t) for t in case["uradora_hyouji"]]
     options = OptionalRules(
-        has_open_tanyao=True, has_aka_dora=True, has_double_yakuman=False,
+        has_open_tanyao=True, has_aka_dora=True,
+        has_double_yakuman=os.environ.get("DOUBLE_YAKUMAN") == "1",
         kazoe_limit=HandConstants.KAZOE_LIMITED, kiriage=False,
         fu_for_open_pinfu=True, fu_for_pinfu_tsumo=False,
     )

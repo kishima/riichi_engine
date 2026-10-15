@@ -1,39 +1,34 @@
-# Keep red fives through discards, calls and kans
+# 赤五を、打牌・鳴き・槓で取り違えない
 
-Branch: `fix/red-five`
+ブランチ: `fix/red-five`
 
-## What is wrong
+## 何が誤りか
 
-- `Hand#remove` takes the first tile of the same kind. With `0m` and `5m` in
-  hand, removing `"5m"` may take the red five. A discard of 5m then leaves a 5m
-  in the hand while the river shows 5m — the red five is gone from the round.
-  A discard of `"5m"` from a hand that holds only `0m` puts `5m` in the river.
-- Chi and pon remove the named tiles with the same rule but record the *names*
-  in the meld, so the meld and the hand can disagree (a chi with `4m 0m` may
-  remove the 5m, record 0m, and leave the 0m in the hand: two red fives).
-- `process_ankan` / `process_daiminkan` record `Array.new(4, tile)` /
-  `Array.new(3, tile)`: a red five in the kan disappears.
-- `process_kakan` adds the tile named (offered as the pon's first tile, e.g.
-  `"5m"`) even when the hand holds the red one.
+- `Hand#remove` は同じ種類の最初の牌を抜きます。手に `0m` と `5m` があるとき `"5m"` を抜くと赤五が
+  抜けることがあります。5m を切ると手に 5m が残り、河には 5m が並び、赤五が局から消えます。
+  `0m` だけを持つ手から `"5m"` を切ると、河には `5m` が並びます。
+- チーとポンは同じ決まりで指定の牌を抜きますが、副露には指定の*名前*を記録するので、副露と手が
+  食い違うことがあります（`4m 0m` のチーで 5m を抜き、副露には 0m と記録し、手に 0m が残る: 赤五が 2 枚）。
+- `process_ankan`・`process_daiminkan` は `Array.new(4, tile)`・`Array.new(3, tile)` を記録するので、
+  槓の中の赤五が消えます。
+- `process_kakan` は指定の牌（ポンの最初の牌として出す。たとえば `"5m"`）を足すので、手にあるのが赤五でも 5m になります。
 
-## Reproduce
+## 再現
 
-Specs in `round_flow_spec.rb` (context "赤五") and `hand_spec.rb`: discard, pon,
-chi, ankan, daiminkan and kakan with a red five in the hand.
+`round_flow_spec.rb`（context「赤五」）と `hand_spec.rb` の spec: 赤五を持った手での打牌・ポン・チー・
+暗槓・大明槓・加槓。
 
-## Fix
+## 直し
 
-- `Hand#remove` prefers the exact tile (red or not) and falls back to the same
-  kind (callers that pass `"5m"` for a hand with only `0m` keep working).
-- `RoundFlow` picks the tiles it moves from the hand (exact tile first) and
-  records those in the river and in the meld; kans record the tiles taken from
-  the hand.
+- `Hand#remove` は同じ牌（赤か否かまで）を優先し、無ければ同じ種類の牌を抜きます（`0m` だけの手に
+  `"5m"` を渡す呼び出しも今までどおり動きます）。
+- `RoundFlow` は手から動かす牌を選び（同じ牌を優先）、その牌を河と副露に記録します。槓は手から取った牌を記録します。
 
-Events keep their shape (tile names as strings).
+イベントの形（牌の名前の文字列）は変わりません。
 
-## Compatibility
+## 互換性
 
-Rivers and melds now show the tile that actually moved. No API change.
+河と副露には実際に動いた牌が出ます。API の変更はありません。
 
 ---
 

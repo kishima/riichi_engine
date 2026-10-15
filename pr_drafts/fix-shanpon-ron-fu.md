@@ -1,30 +1,25 @@
-# Count a triplet completed by ron as an open triplet in the fu
+# ロンで完成した刻子を、符では明刻として数える
 
-Branch: `fix/shanpon-ron-fu`
+ブランチ: `fix/shanpon-ron-fu`
 
-## What is wrong
+## 何が誤りか
 
-On a shanpon wait won by ron, the triplet the winning tile completes counts as
-an open triplet. `SanAnkou` and `Suuankou` already handle this
-(`agari_type == :ron && machi_type == :shanpon`), but `FuCalculator` counts the
-triplet with the concealed fu (4, or 8 for terminals and honors).
+双碰待ちをロンで和了ったとき、和了牌で完成した刻子は明刻です。`SanAnkou` と `Suuankou` はすでにそう扱って
+いますが（`agari_type == :ron && machi_type == :shanpon`）、`FuCalculator` はその刻子を暗刻の符（4、么九牌は 8）で数えます。
 
-## Reproduce
+## 再現
 
-`555z 222m 678p 345s 99p`, waiting on 2m/9p, ron on 2m, closed: 20 + 10
-(closed ron) + 8 (white, concealed) + 2 (2m, open) = 40 fu; the engine gives 50.
-Spec in `fu_calculator_spec.rb` (and that a tsumo keeps the concealed fu).
+門前の `555z 222m 678p 345s 99p`（2m・9p の双碰）、2m でロン: 20 + 10（門前ロン）+ 8（白、暗刻）+ 2（2m、明刻）
+= 40 符のところ、エンジンは 50 符にします。`fu_calculator_spec.rb` の spec（自摸なら暗刻の符のままであることも）。
 
-## Fix
+## 直し
 
-`FuCalculator.mentsu_fu` halves the fu of the concealed triplet that holds the
-winning tile when the win is a ron on a shanpon wait.
+`FuCalculator.mentsu_fu` は、双碰待ちのロンのとき、和了牌を含む暗刻の符を半分にします。
 
-## Compatibility
+## 互換性
 
-Some ron wins drop by 10 fu. Found by the comparison with the Python
-`mahjong` package.
+ロンの和了の一部が 10 符下がります。Python の `mahjong` パッケージとの突き合わせで見つけました。
 
 ---
 
-双碰待ちのロンで完成した刻子を暗刻の符で数えていた (三暗刻・四暗刻の判定は明刻扱いで正しかった)。符も明刻で数える。
+双碰待ちのロンで完成した刻子を暗刻の符で数えていた（三暗刻・四暗刻の判定は明刻扱いで正しかった）。符も明刻で数える。

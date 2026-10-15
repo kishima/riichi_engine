@@ -1,31 +1,28 @@
-# Make the Zeitwerk loader eager-loadable
+# Zeitwerk の loader を eager load できるようにする
 
-Branch: `fix/zeitwerk-eager-load`
+ブランチ: `fix/zeitwerk-eager-load`
 
-## What is wrong
+## 何が誤りか
 
-`RiichiEngine.loader.eager_load` raises `NameError`
-(`uninitialized constant RiichiEngine::Api`): `riichi_engine/api.rb` defines
-`API` and `riichi_engine/version.rb` defines `VERSION`, where Zeitwerk expects
-`Api` and `Version`. A Rails application with `config.eager_load` (the
-production default) calls `Zeitwerk::Loader.eager_load_all` at boot, which
-includes this loader.
+`RiichiEngine.loader.eager_load` が `NameError`（`uninitialized constant RiichiEngine::Api`）になります。
+`riichi_engine/api.rb` は `API` を、`riichi_engine/version.rb` は `VERSION` を定義しますが、Zeitwerk は
+`Api` と `Version` を期待します。`config.eager_load`（production の既定）の Rails アプリケーションは起動時に
+`Zeitwerk::Loader.eager_load_all` を呼び、この loader も含まれます。
 
-## Reproduce
+## 再現
 
-`ruby -Ilib -e 'require "riichi_engine"; RiichiEngine.loader.eager_load'`;
-spec `spec/riichi_engine/loader_spec.rb`.
+`ruby -Ilib -e 'require "riichi_engine"; RiichiEngine.loader.eager_load'`、spec `spec/riichi_engine/loader_spec.rb`。
 
-## Fix
+## 直し
 
-The loader inflects `"api"` as `API` and ignores `version.rb`, which
-`riichi_engine.rb` now requires directly (as the gemspec does).
+loader の inflector で `"api"` を `API` とし、`version.rb` は ignore して `riichi_engine.rb` から直接 require します
+（gemspec と同じ）。
 
-## Compatibility
+## 互換性
 
-None beyond the fix; `RiichiEngine::VERSION` is now defined as soon as the gem
-is required (in 0.1.0 it was not, outside the gemspec).
+修正のほかに変わるのは、gem を require した時点で `RiichiEngine::VERSION` が定義されることだけです
+（0.1.0 では gemspec の外では定義されていませんでした）。
 
 ---
 
-`RiichiEngine.loader.eager_load` が失敗していた (`API`・`VERSION` の名前が Zeitwerk の想定と違う)。Rails の本番の eager load で起動できない。inflector と ignore で直した。
+`RiichiEngine.loader.eager_load` が失敗していた（`API`・`VERSION` の名前が Zeitwerk の想定と違う）。Rails の本番の eager load で起動できない。inflector と ignore で直した。

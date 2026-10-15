@@ -52,6 +52,6 @@
 
 ## そのほか
 
-- `fix/ron-turn-order`（`from_seat:`）と同じ `resolve` を触ります。両方入れるときは引数を両方持たせ、
-  `seats` を打牌者の下家から順に並べます（Fork の `fmrb` ブランチでそうしています）。
+- `fix/ron-turn-order`（`from_seat:`）と同じ `resolve` を触ります。両方入れるときは引数を両方持たせ
+  （`from_seat:, rule:`）、`seats` を打牌者の下家から順に並べます。
 - リーチ宣言牌へのロンでリーチ棒を戻すかどうかは、このブランチでは扱っていません。

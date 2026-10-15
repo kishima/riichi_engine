@@ -1,35 +1,30 @@
-# Keep the discard with the most acceptance in the normal CPU
+# normal の CPU は、受け入れのいちばん多い打牌を選ぶ
 
-Branch: `fix/cpu-discard-ukeire`
+ブランチ: `fix/cpu-discard-ukeire`
 
-## What is wrong
+## 何が誤りか
 
-`TileEvaluator.evaluate_all_discards` gives, per discard, the ukeire of the
-hand left after it. `DahaiSelector.select_normal` sorts the candidates of the
-best shanten by that ukeire *ascending* and takes the first: the CPU keeps the
-shape that accepts the fewest tiles (a kanchan over a ryanmen). `select_hard`
-falls back to `select_normal` near tenpai, while `select_defensive` already
-sorts by `-ukeire`.
+`TileEvaluator.evaluate_all_discards` は打牌ごとに、その後の手の受け入れ枚数を返します。
+`DahaiSelector.select_normal` は向聴数がいちばん小さい候補をその受け入れで*昇順*に並べて先頭を取るので、
+CPU は受け入れのいちばん少ない形を残します（両面より嵌張）。`select_hard` はテンパイ近くでは
+`select_normal` に任せ、`select_defensive` はすでに `-ukeire` で並べています。
 
-## Reproduce
+## 再現
 
-`123m 456p 789s 22m 34s 6s` + any: cutting 6s (or 9s) leaves 2s-5s (8 tiles),
-cutting 3s leaves the 5s kanchan (4); level 2 and 3 cut 3s. Specs in
-`dahai_selector_spec.rb`. In 40 hanchan of four normal CPUs (driven by a
-host that supplies the riichi discard of `fix/riichi-discard`), 341 of 452
-rounds (75 %) ended in an exhaustive draw; with this fix (and the other
-fixes), 85 of 488 (17 %).
+`123m 456p 789s 22m 34s 6s` と何か 1 枚: 6s（か 9s）を切れば 2s-5s 待ち（8 枚）、3s を切れば 5s の嵌張（4 枚）が残ります。
+レベル 2 と 3 は 3s を切ります。`dahai_selector_spec.rb` の spec。normal の CPU 4 人の半荘 40 回
+（リーチの打牌は `fix/riichi-discard` の形で渡す）で、452 局のうち 341 局（75 %）が荒牌流局でした。
+この修正（とほかの修正）を入れると 488 局のうち 85 局（17 %）です。
 
-## Fix
+## 直し
 
-Sort by ukeire descending; the danger score and the tile name still break ties.
-The easy level is left as it is (it prefers terminals and honors first; it may
-be meant to be weak).
+受け入れの降順に並べます。危険度と牌の名前で同点を決めるのは今までどおりです。easy はそのままにしました
+（么九牌を先に切る作りで、弱くしてあるのかもしれません）。
 
-## Compatibility
+## 互換性
 
-The normal and hard CPUs play differently (better). No API change.
+normal と hard の CPU の打ち方が変わります（よくなります）。API の変更はありません。
 
 ---
 
-CPU (normal、と hard の多く) が受け入れのいちばん少ない形を残していた (並べ替えが昇順)。受け入れの多い方を残すようにした。easy は変えていない。
+CPU（normal、と hard の多く）が受け入れのいちばん少ない形を残していた（並べ替えが昇順）。受け入れの多い方を残すようにした。easy は変えていない。

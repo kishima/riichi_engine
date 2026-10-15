@@ -1,30 +1,26 @@
-# Accept the documented game_type "tonpuu"
+# 文書の game_type "tonpuu" を受け付ける
 
-Branch: `fix/tonpuu-game-type`
+ブランチ: `fix/tonpuu-game-type`
 
-## What is wrong
+## 何が誤りか
 
-README and `docs/api_reference.md` name the east-only game `"tonpuu"`, but
-`GameFlow` only knows `"tonpuusen"`. With the documented value,
-`should_end_game?` falls through to `false` and the game never ends; the
-all-last dealer win does not end it either.
+README と `docs/api_reference.md` は東風戦を `"tonpuu"` と書いていますが、`GameFlow` は `"tonpuusen"` しか
+知りません。文書の値では `should_end_game?` が `false` に落ちてゲームが終わらず、オーラスの親の和了でも終わりません。
 
-## Reproduce
+## 再現
 
-`RuleConfig.new("game_type" => "tonpuu")`, East 4 won by a non-dealer:
-`judge_next` gives the next round (South 1) instead of the game end. Specs in
-`game_flow_spec.rb`.
+`RuleConfig.new("game_type" => "tonpuu")` で東 4 局を子が和了ると、`judge_next` がゲーム終了ではなく
+次局（南 1 局）を返します。`game_flow_spec.rb` の spec。
 
-## Fix
+## 直し
 
-Both names mean the east-only game. The docs keep `"tonpuu"` and mention
-`"tonpuusen"`.
+どちらの名前も東風戦として扱います。文書は `"tonpuu"` のままにし、`"tonpuusen"` も同じと書きました。
 
-## Compatibility
+## 互換性
 
-`"tonpuusen"` works as before. An unknown `game_type` still never ends (not
-changed here; raising for it might be worth a separate change).
+`"tonpuusen"` は今までどおりです。知らない `game_type` が終わらないのはこのブランチでは変えていません
+（`fix/unknown-game-type` で弾くようにします）。
 
 ---
 
-文書の `"tonpuu"` ではゲームが終わらなかった (コードは `"tonpuusen"` しか知らない)。両方を東風戦として扱う。
+文書の `"tonpuu"` ではゲームが終わらなかった（コードは `"tonpuusen"` しか知らない）。両方を東風戦として扱う。

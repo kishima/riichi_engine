@@ -1,34 +1,31 @@
-# Clear the ippatsu chance on the riichi player's next discard
+# 一発を、リーチした本人の次の打牌で消す
 
-Branch: `fix/ippatsu`
+ブランチ: `fix/ippatsu`
 
-## What is wrong
+## 何が誤りか
 
-`ippatsu_flags[seat]` is set by `process_riichi` and cleared only by calls and
-kans (`clear_ippatsu_flags`). Without any call the flag stays for the rest of
-the hand, and every later win of that player counts ippatsu.
+`ippatsu_flags[seat]` は `process_riichi` で立ち、鳴きと槓（`clear_ippatsu_flags`）でしか消えません。
+鳴きが無ければ局の終わりまで立ったままで、その席の後の和了すべてに一発が付きます。
 
-## Reproduce
+## 再現
 
-Seat 0 in riichi with `ippatsu_flags[0] = true` discards normally: the flag is
-still true (spec "一発はリーチした本人の次の打牌でクリアされる"). Another seat's
-flag must stay; the discard that declares riichi keeps it (second spec).
+席 0 がリーチ中（`ippatsu_flags[0] = true`）でふつうに打牌しても、フラグが真のまま
+（spec「一発はリーチした本人の次の打牌でクリアされる」）。ほかの席のフラグは残ること、リーチ宣言の打牌では
+消えないことも spec にしました。
 
-## Fix
+## 直し
 
-`process_dahai` clears the flag of the discarding seat when it is in riichi,
-except for the declaring discard (`action[:riichi]`).
+`process_dahai` は、打牌した席がリーチ中なら、その席のフラグを消します（宣言の打牌 `action[:riichi]` を除く）。
 
-## Rule
+## ルール
 
-Ippatsu holds until the player's own next discard: a ron on any discard before
-it, or the tsumo of the next draw, still counts; any call (including a closed
-kan) ends it, as the engine already does. This is the Tenhou and M-League rule.
+一発は本人の次の打牌まで: それまでの打牌へのロンと、次の自摸での和了には付きます。鳴き（暗槓を含む）で
+消えるのは今までどおり。天鳳と M リーグの決まりです。
 
-## Compatibility
+## 互換性
 
-Wins after the first go-around no longer get ippatsu. No API change.
+一巡を過ぎた和了に一発が付かなくなります。API の変更はありません。
 
 ---
 
-一発がリーチした本人の次の打牌で消えなかった (鳴きと槓でしか消えない)。次の打牌で消すようにした (宣言牌では消さない)。
+一発がリーチした本人の次の打牌で消えなかった（鳴きと槓でしか消えない）。次の打牌で消すようにした（宣言牌では消さない）。

@@ -1,26 +1,25 @@
-# Treat a red five as a simple tile in Tile#chunchan?
+# Tile#chunchan? で赤五を中張牌として扱う
 
-Branch: `fix/tanyao-red-five`
+ブランチ: `fix/tanyao-red-five`
 
-## What is wrong
+## 何が誤りか
 
-`Tile#chunchan?` checks `number >= 2 && number <= 8`, and a red five has
-`number == 0`. A hand with a red five never has tanyao (and
-`Mentsu#all_chunchan?` is false for a set with one).
+`Tile#chunchan?` は `number >= 2 && number <= 8` を見ていますが、赤五は `number == 0` です。赤五を含む手には
+断么九が付きません（赤五を含む面子の `Mentsu#all_chunchan?` も偽になります）。
 
-## Reproduce
+## 再現
 
-`Tile.new("0m").chunchan?` is false; tanyao spec "赤五を含んでも成立する".
+`Tile.new("0m").chunchan?` が偽。断么九の spec「赤五を含んでも成立する」。
 
-## Fix
+## 直し
 
-Use `effective_number`, as `same_kind?`, sorting and `next_tile_notation` do.
+`same_kind?`・並べ替え・`next_tile_notation` と同じく `effective_number` を見ます。
 
-## Compatibility
+## 互換性
 
-Hands with a red five gain tanyao where they have it. Found by comparing win
-evaluation with the Python `mahjong` package (PyPI) on random hands.
+赤五を含む手に、成立していれば断么九が付きます。Python の `mahjong` パッケージと乱数の手で和了の評価を
+突き合わせて見つけました。
 
 ---
 
-赤五を含む手に断么九が付かなかった (`chunchan?` が赤五の番号 0 を見ていた)。
+赤五を含む手に断么九が付かなかった（`chunchan?` が赤五の番号 0 を見ていた）。

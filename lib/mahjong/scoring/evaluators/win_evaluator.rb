@@ -97,7 +97,7 @@ module Mahjong
         private_class_method :yakuman_count
 
         # 包の分: ルール pao にある役満で、その席に責任者が記録されているもの
-        # （RoundState#pao_seats）。基本点は役満 1 つ分ずつ、手の基本点を超えない。
+        # （RoundState#pao_seats）。基本点はその役満の分（ダブル役満なら 2 つ分）で、手の基本点を超えない。
         def self.pao_parts(state, seat, yaku_result, rule)
           targets = Array(rule&.pao).map(&:to_s)
           return [] if targets.empty? || !yaku_result.yakuman?

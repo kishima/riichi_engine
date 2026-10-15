@@ -1,31 +1,28 @@
-# Use the whole seed string when it is not base 36
+# 36 進数でない seed は、文字列全体で牌山を作る
 
-Branch: `fix/wall-seed`
+ブランチ: `fix/wall-seed`
 
-## What is wrong
+## 何が誤りか
 
-`Wall.build` turns the seed into a number with `String#to_i(36)`, which stops
-at the first character outside `0-9a-z`. `"round-001"` (the README's quick
-start) and `"round-002"` both read as `"round"`, so they build the same wall;
-so do `"test-seed"` and `"test-other"`.
+`Wall.build` は seed を `String#to_i(36)` で数にしますが、`to_i(36)` は `0-9a-z` 以外の文字で止まります。
+README のクイックスタートの `"round-001"` と `"round-002"` はどちらも `"round"` と読まれ、同じ牌山になります。
+`"test-seed"` と `"test-other"` も同じです。
 
-## Reproduce
+## 再現
 
 `Wall.build(seed: "round-001").to_a == Wall.build(seed: "round-002").to_a`
-(spec "英数字以外を含む seed も全体で区別する").
+（spec「英数字以外を含む seed も全体で区別する」）。
 
-## Fix
+## 直し
 
-A seed made only of `0-9a-z` (either case) is read as before, so its wall is
-the same as in 0.1.0 (spec "英数字だけの seed は従来と同じ順序になる"). Any other
-seed is hashed as a whole (SHA-256 of the string, as an integer seed for
-`Random`).
+`0-9a-z`（大文字も）だけの seed は今までどおりに読むので、牌山は 0.1.0 と同じです（spec
+「英数字だけの seed は従来と同じ順序になる」）。それ以外の seed は文字列全体のハッシュ（SHA-256 を整数にして
+`Random` の seed に）を使います。
 
-## Compatibility
+## 互換性
 
-Seeds with other characters build a different wall than in 0.1.0 (they could
-not be told apart before). Base-36 seeds are unchanged. `digest` is from the
-standard library.
+ほかの文字を含む seed は 0.1.0 と違う牌山になります（以前は互いに区別できませんでした）。36 進数の seed は
+変わりません。`digest` は標準ライブラリです。
 
 ---
 

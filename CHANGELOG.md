@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.1.fmrb3（Fork の fmrb ブランチ、未公開）
+
+### 修正
+
+- **CPU の向聴数** — 副露を数えておらず、鳴いた後の打牌と鳴きの判断を誤っていた。`melds:` で副露を面子として数える。通常形は色ごとに数えて覚えておき、受け入れの計算が約 20 倍速くなった（`fix/shanten-melds`）
+- **第一巡** — 親の第一打牌で全員の第一巡が終わり、子の九種九牌・ダブル立直・地和が起きなかった（`fix/first-turn-flags`）
+- **CPU のリーチ** — 14 枚の手のままテンパイを見ていたため、CPU が一度もリーチしなかった。切る牌は待ちの残り枚数で選ぶ（`fix/cpu-riichi`）
+- **槓と牌山** — 槓のたびに牌山が 1 枚短くならず、海底と荒牌流局が遅れていた。海底牌の後は槓を出さない（`fix/kan-live-wall`）
+- **知らない game_type** — ゲームが終わらず局が続いた。`RuleConfig.new` で `EngineError`（`fix/unknown-game-type`）
+- **トビの文書** — api_reference.md の「0 点以下」をコードどおりの「0 点未満」に（`fix/tobi-doc`）
+
+### 機能（ルールのキー。既定はどれも 0.1.0 の動き）
+
+- **途中流局** — `suufon_renda`・`suukaikan`・`suucha_riichi`（既定 `false`）（`feat/abortive-draws`）
+- **流し満貫** — `nagashi_mangan`（既定 `false`）。荒牌流局の `round_end_info[:nagashi_seats]` と `API.calculate_nagashi_mangan_payments`（`feat/nagashi-mangan`）
+- **包** — `pao`（既定 `[]`、`"daisangen"`・`"daisuushii"`・`"suukantsu"`）。`ScoreResult#score_changes` が責任払いを割り振る（`feat/pao`）
+- **明槓の新ドラ** — `minkan_dora_after_discard`（既定 `false`）。真なら明槓の新ドラは打牌のときにめくる（`feat/kan-dora-after-discard`）
+- **ダブル役満** — 既存の `double_yakuman`（既定 `false`）が効くようになった。四暗刻単騎・国士無双十三面・純正九蓮宝燈・大四喜を役満 2 つ分（`feat/double-yakuman`）
+- **アガリ止め・テンパイ止め** — `agari_yame`（既定 `true`）・`tenpai_yame`（既定 `false`）（`feat/agari-yame`）
+
+### 試験
+
+- 440 examples。`spec/compat/` の突き合わせは `DOUBLE_YAKUMAN=1` で両方のダブル役満を有効にして比べられる（違い 0）。
+
 ## 0.1.1.fmrb2（Fork の fmrb ブランチ、未公開）
 
 ### 修正

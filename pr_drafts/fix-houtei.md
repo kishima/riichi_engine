@@ -1,48 +1,40 @@
-# Apply houtei to a ron on the last discard
+# 最後の打牌へのロンに河底撈魚を付ける
 
-Branch: `fix/houtei`
+ブランチ: `fix/houtei`
 
-## What is wrong
+## 何が誤りか
 
-`RoundState#is_houtei?` is `is_haitei? && phase == :naki_wait`, and both
-places that build the yaku context call it outside that phase:
+`RoundState#is_houtei?` は `is_haitei? && phase == :naki_wait` ですが、役の文脈を作る 2 か所はどちらも
+その phase の外で呼びます。
 
-- ron candidates are detected inside `process_dahai`, before the phase becomes
-  `:naki_wait` (it is still `:dahai`);
-- `evaluate_win` is called after `process_ron_agari`, when the phase is
-  `:round_end`.
+- ロンの候補は `process_dahai` の中（phase が `:naki_wait` になる前、まだ `:dahai`）で探します。
+- `evaluate_win` は `process_ron_agari` の後（phase が `:round_end`）に呼ばれます。
 
-So houtei never applies to a win, and a hand whose only yaku is houtei is never
-offered a ron on the last discard.
+そのため河底撈魚は和了に付かず、河底撈魚だけが役の手には最後の打牌へのロンも出ません。
 
-## Reproduce
+## 再現
 
-Empty wall, seat 0 discards 3s, seat 1 holds `123m 456p 789s 99m 24s` (no yaku
-but houtei): after the discard the round ends in an exhaustive draw instead of
-waiting for seat 1's ron, and if the ron is applied by hand `evaluate_win` has
-no houtei. Spec: `round_flow_spec.rb` "最後の打牌は河底撈魚だけでロンでき…", and a
-guard that a tsumo on the last tile has haitei and not houtei.
+牌山が空で、席 0 が 3s を切り、席 1 が `123m 456p 789s 99m 24s`（河底撈魚のほかに役なし）を持つ場合:
+打牌の後、席 1 のロン待ちにならずに荒牌流局になります。ロンを手で適用しても `evaluate_win` に河底撈魚が
+付きません。spec は `round_flow_spec.rb` の「最後の打牌は河底撈魚だけでロンでき…」と、最後の牌の自摸和了には
+海底摸月が付いて河底撈魚が付かないことの確認です。
 
-## Fix
+## 直し
 
-Both context builders decide houtei from the wall and the kind of win: a ron
-(not a chankan) when the wall is empty. `RoundState#is_houtei?` is left as it
-is.
+役の文脈を作る 2 か所とも、河底撈魚を牌山と和了の種類で判定します: 牌山が空のときのロン（槍槓を除く）。
+`RoundState#is_houtei?` はそのままにしました。
 
-The NakiDetector spec "海底ではロン以外の鳴きを検出しない" expected no option for a
-seat whose shanpon wait gets houtei on that discard; it now expects that seat's
-ron (still no pon), which is what the spec name says.
+NakiDetector の spec「海底ではロン以外の鳴きを検出しない」は、その打牌で双碰待ちに河底撈魚が付く席の選択肢を
+「なし」としていました。spec の名前どおり、その席のロンを出し（ポンは出さない）と期待するように直しました。
 
-## Rule
+## ルール
 
-Houtei: a ron on the discard after the last draw (Tenhou, M-League). A chankan
-on the last tile is chankan, not houtei, here as in both.
+河底撈魚は最後の自摸の後の打牌へのロン（天鳳、M リーグ）。最後の牌での槍槓は、どちらでも槍槓で、河底撈魚ではありません。
 
-## Compatibility
+## 互換性
 
-Wins on the last discard gain one han; some last discards that used to end in
-an exhaustive draw are now won. No API change.
+最後の打牌でのロンは 1 翻増えます。荒牌流局になっていた最後の打牌の一部は和了になります。API の変更はありません。
 
 ---
 
-最後の打牌へのロンに河底撈魚が付かず、河底撈魚だけの手にはロンも出なかった (phase を見ていたため)。牌山が空でのロン (槍槓を除く) で判定するようにした。
+最後の打牌へのロンに河底撈魚が付かず、河底撈魚だけの手にはロンも出なかった（phase を見ていたため）。牌山が空でのロン（槍槓を除く）で判定するようにした。
