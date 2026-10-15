@@ -40,6 +40,8 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nishi_iri` | Boolean | `false` | 西入あり |
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
+| `agari_yame` | Boolean | `true` | アガリ止めあり（オーラスで首位の親が和了ればゲーム終了。理由 `:all_last_oya_agari`） |
+| `tenpai_yame` | Boolean | `false` | テンパイ止めあり（オーラスで首位の親がテンパイで流局すればゲーム終了。理由 `:all_last_oya_tenpai`） |
 
 ### Snapshots
 

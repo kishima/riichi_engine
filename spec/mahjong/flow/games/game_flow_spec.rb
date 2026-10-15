@@ -105,6 +105,43 @@ RSpec.describe Mahjong::Flow::Games::GameFlow do
       expect(result.reason).to eq(:all_last_oya_agari)
     end
 
+    describe "アガリ止め・テンパイ止め" do
+      let(:all_last) { build_progress_snapshot(bakaze: "nan", kyoku: 4, oya_index: 3, scores: [20_000, 20_000, 20_000, 40_000]) }
+      let(:oya_win) { Mahjong::Results::RoundEndInfo.new(result_type: :ron, winners: [{ seat: 3 }], tenpai_seats: []) }
+      let(:oya_tenpai) { Mahjong::Results::RoundEndInfo.new(result_type: :ryuukyoku, winners: [], tenpai_seats: [3]) }
+
+      it "既定（agari_yame あり・tenpai_yame なし）: 首位の親の和了で終わり、テンパイでは続く" do
+        expect(described_class.judge_next(progress_snapshot: all_last, round_end_info: oya_win, rule:).reason).to eq(:all_last_oya_agari)
+
+        result = described_class.judge_next(progress_snapshot: all_last, round_end_info: oya_tenpai, rule:)
+        expect(result).to be_next_round
+        expect(result.renchan).to be(true)
+      end
+
+      it "agari_yame が偽なら首位の親が和了っても続く" do
+        no_stop = Mahjong::Config::RuleConfig.new("agari_yame" => false)
+        result = described_class.judge_next(progress_snapshot: all_last, round_end_info: oya_win, rule: no_stop)
+
+        expect(result).to be_next_round
+        expect(result.next_honba).to eq(1)
+      end
+
+      it "tenpai_yame なら首位の親のテンパイ流局で終わる" do
+        stop = Mahjong::Config::RuleConfig.new("tenpai_yame" => true)
+        result = described_class.judge_next(progress_snapshot: all_last, round_end_info: oya_tenpai, rule: stop)
+
+        expect(result).to be_game_end
+        expect(result.reason).to eq(:all_last_oya_tenpai)
+      end
+
+      it "tenpai_yame でも親が首位でなければ続く" do
+        stop = Mahjong::Config::RuleConfig.new("tenpai_yame" => true)
+        behind = build_progress_snapshot(bakaze: "nan", kyoku: 4, oya_index: 3, scores: [40_000, 20_000, 20_000, 20_000])
+
+        expect(described_class.judge_next(progress_snapshot: behind, round_end_info: oya_tenpai, rule: stop)).to be_next_round
+      end
+    end
+
     it "東4局の子和了で半荘は南1局へ進む" do
       snapshot = build_progress_snapshot(bakaze: "ton", kyoku: 4)
       info = Mahjong::Results::RoundEndInfo.new(result_type: :ron, winners: [{ seat: 1 }], tenpai_seats: [])
