@@ -18,7 +18,10 @@ module Mahjong
       "tobi" => true,
       "nishi_iri" => false,
       "nishi_iri_threshold" => 30000,
-      "renpuu_jantou_fu" => 2
+      "renpuu_jantou_fu" => 2,
+      "suufon_renda" => false,
+      "suukaikan" => false,
+      "suucha_riichi" => false
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）

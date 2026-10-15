@@ -197,9 +197,14 @@ module Mahjong
       state.first_turn_flags[seat] = false
 
       naki_options = Detectors::NakiDetector.detect(state: state, dahai_seat: seat, dahai_tile: tile, rule: rule)
+      abortive = abortive_draw(state, rule)
+      # 途中流局になる打牌に残るのはロンだけ（ロンが無ければその場で流局）
+      naki_options = ron_options(naki_options) if abortive
       if naki_options.any?
         state.phase = :naki_wait
         state.pending_actions = naki_options
+      elsif abortive
+        end_abortive_draw(state, abortive)
       else
         advance_turn(state)
       end
@@ -220,6 +225,8 @@ module Mahjong
       if state.pending_actions.empty?
         if state.chankan_tile
           finalize_kakan(state)
+        elsif (abortive = abortive_draw(state, rule))
+          end_abortive_draw(state, abortive)
         else
           advance_turn(state)
         end
@@ -372,6 +379,45 @@ module Mahjong
 
       [{ type: :sanchahou, seats: Array(action[:seats]).sort }]
     end
+
+    # 打牌がロンされずに通ったときの途中流局（ルールで有効なものだけ）:
+    #   :suufon_renda  四風連打（鳴きの無い第一巡で 4 人が同じ風牌を切った）
+    #   :suukaikan     四槓散了（2 人以上で槓が 4 つになった後の打牌）
+    #   :suucha_riichi 四家立直（4 人目のリーチの打牌）
+    def self.abortive_draw(state, rule)
+      return :suufon_renda if rule.suufon_renda? && suufon_renda?(state)
+      return :suukaikan if rule.suukaikan? && suukaikan?(state)
+      return :suucha_riichi if rule.suucha_riichi? && state.riichi_flags.values_at(0, 1, 2, 3).all?
+
+      nil
+    end
+
+    def self.suufon_renda?(state)
+      return false unless 4.times.all? { |seat| state.kawas[seat].count == 1 && state.fuuros[seat].empty? }
+
+      first = state.kawas[0].tiles.first.tile
+      first.kazehai? && 4.times.all? { |seat| state.kawas[seat].tiles.first.tile.same_kind?(first) }
+    end
+    private_class_method :suufon_renda?
+
+    def self.suukaikan?(state)
+      state.kan_count.to_i >= 4 && state.kan_by_player.values.count(&:positive?) >= 2
+    end
+    private_class_method :suukaikan?
+
+    def self.ron_options(naki_options)
+      naki_options.transform_values { |actions| actions.select { |a| a[:type].to_sym == :ron_agari } }
+                  .reject { |_seat, actions| actions.empty? }
+    end
+    private_class_method :ron_options
+
+    def self.end_abortive_draw(state, kind)
+      state.phase = :round_end
+      state.pending_actions = {}
+      clear_agari_flags(state)
+      set_round_end_info(state, result_type: kind, draw_reason: kind)
+    end
+    private_class_method :end_abortive_draw
 
     def self.advance_turn(state)
       if state.wall.remaining <= 0

@@ -3,6 +3,9 @@ module Mahjong
     module Games
       # 半荘/東風の局間進行を管理する。
       class GameFlow
+    # 途中流局（親は連荘し、本場が 1 つ増える）
+    ABORTIVE_DRAWS = %i[draw_abortive kyuushu_kyuuhai sanchahou suufon_renda suukaikan suucha_riichi].freeze
+
     # 次局に進むべきか、ゲーム終了かを判定する
     # @param progress_snapshot [Mahjong::Snapshots::GameProgressSnapshot]
     # @param round_end_info [Hash]
@@ -105,7 +108,7 @@ module Mahjong
         round_end_info.winners.any? { |w| w[:seat] == progress_snapshot.oya_index }
       when :ryuukyoku
         round_end_info.tenpai_seats.include?(progress_snapshot.oya_index)
-      when :draw_abortive, :kyuushu_kyuuhai, :sanchahou
+      when *ABORTIVE_DRAWS
         true
       else
         false
@@ -116,7 +119,7 @@ module Mahjong
       case round_end_info.result_type
       when :tsumo_agari, :ron_agari, :tsumo, :ron
         renchan ? progress_snapshot.honba + 1 : 0
-      when :ryuukyoku, :draw_abortive, :kyuushu_kyuuhai, :sanchahou
+      when :ryuukyoku, *ABORTIVE_DRAWS
         progress_snapshot.honba + 1
       else
         0

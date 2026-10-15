@@ -210,10 +210,14 @@ RiichiEngine::API.apply_round_action(
 | `:ron_agari` | ロン和了 |
 | `:ryuukyoku` | 荒牌流局（牌山切れ） |
 | `:kyuushu_kyuuhai` | 九種九牌 |
-| `:suufon_renda` | 四風連打 |
-| `:suucha_riichi` | 四家リーチ |
+| `:suufon_renda` | 四風連打（ルール `suufon_renda` が真のとき） |
+| `:suucha_riichi` | 四家リーチ（ルール `suucha_riichi` が真のとき） |
 | `:sanchahou` | 三家和 |
-| `:suukaikan` | 四槓散了 |
+| `:suukaikan` | 四槓散了（ルール `suukaikan` が真のとき） |
+
+途中流局（`:kyuushu_kyuuhai`・`:suufon_renda`・`:suucha_riichi`・`:sanchahou`・`:suukaikan`）は点数の移動が無く、
+`judge_next_game_round` で親の連荘・本場 +1 になります。四風連打・四家立直・四槓散了は、その打牌がロンされずに
+通ったときに成立します（その打牌へのポン・チー・カンは出ず、ロンできる席だけが `:naki_wait` に残ります）。
 
 ```ruby
 result = RiichiEngine::API.apply_round_action(
