@@ -83,11 +83,16 @@ module Mahjong
           [winner_info, score_result]
         end
 
-        # 複合役満（multiple_yakuman）なら成立した役満の数、そうでなければ 1。
+        # 役満の数（基本点 8000 の何倍か）。役満の項目の han が -1 なら 1 つ、-2（ダブル役満、
+        # double_yakuman のときだけ付く）なら 2 つ。複合役満（multiple_yakuman）なら全部を足し、
+        # そうでなければいちばん大きいもの 1 つ。
         def self.yakuman_count(yaku_result, rule)
-          return 1 unless yaku_result.yakuman? && rule&.multiple_yakuman?
+          return 1 unless yaku_result.yakuman?
 
-          [yaku_result.yaku.size, 1].max
+          units = yaku_result.yaku.map { |entry| [-entry.han.to_i, 1].max }
+          return 1 if units.empty?
+
+          rule&.multiple_yakuman? ? units.sum : units.max
         end
         private_class_method :yakuman_count
 

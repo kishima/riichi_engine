@@ -31,7 +31,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `aka_dora` | Hash | `{ "m" => 1, "p" => 1, "s" => 1 }` | スートごとの赤ドラ枚数 |
 | `kuitan` | Boolean | `true` | 食い断あり |
 | `atozuke` | Boolean | `true` | 後付けあり |
-| `double_yakuman` | Boolean | `false` | ダブル役満あり |
+| `double_yakuman` | Boolean | `false` | ダブル役満あり（四暗刻単騎・国士無双十三面・純正九蓮宝燈・大四喜を役満 2 つ分で数える。役の `han` は `-2`。`multiple_yakuman` が偽なら、重なった役満のうちいちばん大きいもの 1 つ） |
 | `multiple_yakuman` | Boolean | `false` | 複合役満あり（役満が重なれば役満の数だけ倍。偽なら役満 1 つ） |
 | `kazoe_yakuman` | Boolean | `true` | 数え役満あり |
 | `kiriage_mangan` | Boolean | `false` | 切り上げ満貫あり |
