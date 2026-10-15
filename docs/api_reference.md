@@ -51,6 +51,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `tenpai_yame` | Boolean | `false` | テンパイ止めあり（オーラスで首位の親がテンパイで流局すればゲーム終了。理由 `:all_last_oya_tenpai`） |
 | `kuikae` | Boolean | `true` | 喰い替えあり。`false` なら、鳴いた直後に鳴いた牌と同じ牌（チーでは筋の牌も）を切れず、切れる牌が残らない鳴きは出ない |
 | `riichi_ankan` | Boolean | `false` | リーチ後の暗槓あり。自摸った牌の暗槓（送り槓は不可）で、待ちの牌の種類が変わらないときだけ |
+| `kokushi_ankan_chankan` | Boolean | `false` | 国士無双の暗槓の搶槓あり（暗槓した牌で国士無双を和了れる席にロンを出す） |
 
 ### Snapshots
 
@@ -106,7 +107,6 @@ Mahjong::State::RoundState
 |---|---|---|
 | `state` | `RoundState` | 現在の局状態 |
 | `action` | `Hash` | 適用するアクション |
-| `rule` | `RuleConfig` | ゲームルール |
 
 **`action` の形式：**
 
@@ -249,7 +249,6 @@ RiichiEngine::API.calculate_nagashi_mangan_payments([2], oya_seat: 0)
 |---|---|---|
 | `progress_snapshot` | `GameProgressSnapshot` | 局終了後の点棒・場況 |
 | `round_end_info` | `RoundEndInfo` | 局終了の詳細情報 |
-| `rule` | `RuleConfig` | ゲームルール |
 
 **返り値：** `Mahjong::Results::GameFlowResult`
 
@@ -275,7 +274,6 @@ RiichiEngine::API.calculate_nagashi_mangan_payments([2], oya_seat: 0)
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `scores` | `Hash{Integer => Integer}` | seat番号 → 点棒 のマップ |
-| `rule` | `RuleConfig` | ゲームルール |
 
 **返り値：** `Array<Mahjong::Results::FinalResult>`
 
@@ -291,7 +289,6 @@ UI 表示用に情報が必要な場合はこちらを使います。
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `final_result_snapshot` | `FinalResultSnapshot` | 点棒とプレイヤー情報を含むスナップショット |
-| `rule` | `RuleConfig` | ゲームルール |
 
 **返り値：** `Array<Mahjong::Results::FinalResult>`
 
@@ -305,11 +302,9 @@ UI 表示用に情報が必要な場合はこちらを使います。
 
 | 引数 | 型 | 説明 |
 |---|---|---|
-| `state` | `RoundState` | 現在の局状態 |
 | `seat` | `Integer` | 和了者の座席番号 |
 | `agari_type` | `:tsumo \| :ron` | ツモ和了かロン和了か |
 | `agari_tile` | `Tile \| String` | 和了牌（例: `"5m"`） |
-| `rule` | `RuleConfig` | ゲームルール |
 | `extra_flags` | `Hash` | 追加フラグ（チャンカン・リンシャンなど。通常は `{}`） |
 | `snapshot` | `WinEvaluationSnapshot` | 場風・自風などの情報 |
 

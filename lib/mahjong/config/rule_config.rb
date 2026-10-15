@@ -28,7 +28,8 @@ module Mahjong
       "agari_yame" => true,
       "tenpai_yame" => false,
       "kuikae" => true,
-      "riichi_ankan" => false
+      "riichi_ankan" => false,
+      "kokushi_ankan_chankan" => false
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）
