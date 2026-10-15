@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.1.fmrb2（Fork の fmrb ブランチ、未公開）
+
+### 修正
+
+- **ダブロン・三家和** — ルールの `double_ron`・`triple_ron_draw` が効いていなかった。`resolve_pending_action` に任意の `rule:` を渡すと、2 人のロンは両方の和了（`seats:` 付きの `:ron_agari`）、3 人のロンは三家和の流局（`:sanchahou`）になる（`fix/multiple-ron`）
+
+### 機能
+
+- **複合役満** — ルールの `multiple_yakuman`（既定 `false`）。真なら役満が重なった手を役満の数だけ倍で数える（`feat/multiple-yakuman`）
+
+### 試験
+
+- `spec/compat/` の突き合わせは `multiple_yakuman` を真にして行う（Python の `mahjong` は役満を重ねる）。決まりの違いは 0 になった。
+
 ## 0.1.1.fmrb1（Fork の fmrb ブランチ、未公開）
 
 0.1.0 に、上流へ個別に出せる形の修正（`fix/*` ブランチ、1 ブランチ 1 件）をまとめたもの。

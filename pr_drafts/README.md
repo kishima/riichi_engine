@@ -22,6 +22,12 @@ the second one to be merged needs a trivial rebase.
 | `fix/shanpon-ron-fu` | [fix-shanpon-ron-fu.md](fix-shanpon-ron-fu.md) | scoring/calculators/fu_calculator_spec.rb |
 | `fix/machi-interpretation` | [fix-machi-interpretation.md](fix-machi-interpretation.md) | scoring/judges/machi_judge_spec.rb, win_evaluator_spec.rb (new) |
 | `fix/ryanpeiko-four-sequences` | [fix-ryanpeiko-four-sequences.md](fix-ryanpeiko-four-sequences.md) | scoring/yaku/pattern_yaku_spec.rb |
+| `fix/multiple-ron` | [fix-multiple-ron.md](fix-multiple-ron.md) (Japanese) | flow/resolvers/action_resolver_spec.rb, round_flow_spec.rb, flow/games/game_flow_spec.rb |
+| `feat/multiple-yakuman` | [feat-multiple-yakuman.md](feat-multiple-yakuman.md) (Japanese) | scoring/evaluators/multiple_yakuman_spec.rb (new), scoring/calculators/score_calculator_spec.rb |
+
+The upstream author writes in Japanese, so the pull requests go in Japanese.
+The two newest drafts are; the older ones above are still in English and are
+to be rewritten before they are sent.
 
 Neighbouring changes (a rebase after the first is merged):
 
@@ -32,18 +38,23 @@ Neighbouring changes (a rebase after the first is merged):
   `round_flow.rb`.
 - `fix/call-own-options` and `fix/ron-turn-order` edit the same two lines of
   `ActionValidator.highest_priority_action?`.
+- `fix/ron-turn-order` and `fix/multiple-ron` both add a keyword to
+  `ActionResolver.resolve` and `resolve_pending_action`; together they take
+  both (`from_seat:, rule:`) and the ron seats are ordered from the discarder.
 
 Rule choices (Tenhou / M-League; the defaults keep 0.1.0's behaviour where a
 rule is a matter of choice):
 
 - Houtei on the discard after the last draw, not on a chankan.
 - Ippatsu until the player's own next discard; any call ends it.
-- Atamahane between rons, by turn order from the discarder. Double ron is not
-  added: `double_ron` (default `true`) still has no effect. Making it real is a
-  separate change of play and of the default.
-- Not changed, reported only: several yakuman in one hand score as one yakuman
-  (Tenhou adds them up; `double_yakuman`, default `false`, is not used by the
-  scoring). A setting for it could be a follow-up.
+- Atamahane between rons, by turn order from the discarder, when the resolver
+  is called without `rule:`. With `rule:` (`fix/multiple-ron`), `double_ron`
+  and `triple_ron_draw` take effect: double ron, and three rons as sanchahou
+  (Tenhou's combination, the keys' defaults). Honba and riichi sticks go to
+  the first winner from the discarder.
+- Several yakuman in one hand: one yakuman by default (0.1.0), added up with
+  the new `multiple_yakuman` (`feat/multiple-yakuman`). `double_yakuman` is
+  still unused.
 
 The gemspec already declares `spec.license = "MIT"` (and the published 0.1.0
 has it); nothing to change there.

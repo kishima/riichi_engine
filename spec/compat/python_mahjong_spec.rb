@@ -19,6 +19,6 @@ RSpec.describe "Python mahjong との突き合わせ" do
     bad = results.reject { |r| r["diffs"].empty? }.map { |r| "#{r['case']['id']}: #{r['diffs'].join('; ')}" }
 
     expect(bad).to eq([])
-    expect(results.count { |r| r["rule"] }).to be <= 2
+    expect(results.count { |r| r["rule"] }).to eq(0) # multiple_yakuman is set (python_mahjong_compat.rb RULE)
   end
 end

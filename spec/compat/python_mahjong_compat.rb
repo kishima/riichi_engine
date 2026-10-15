@@ -14,8 +14,12 @@ module PythonMahjongCompat
   # The riichi_engine rule the cases are evaluated with, and the matching
   # Python options (python_mahjong_eval.py). The Python package gives 4 fu for
   # a pair of the seat wind that is also the round wind; riichi_engine makes it
-  # a setting (renpuu_jantou_fu, default 2), set to 4 here.
-  RULE = { "renpuu_jantou_fu" => 4 }.freeze
+  # a setting (renpuu_jantou_fu, default 2), set to 4 here. The Python package
+  # adds up several yakuman in one hand; riichi_engine does with
+  # multiple_yakuman (default false), set here. MULTIPLE_YAKUMAN=0 compares
+  # with the default instead (the multiple yakuman then show as rule
+  # differences).
+  RULE = { "renpuu_jantou_fu" => 4, "multiple_yakuman" => ENV["MULTIPLE_YAKUMAN"] != "0" }.freeze
 
   KINDS = (%w[m p s].flat_map { |s| (1..9).map { |n| "#{n}#{s}" } } + (1..7).map { |n| "#{n}z" }).freeze
   WINDS = %w[ton nan sha pei].freeze
@@ -340,9 +344,9 @@ module PythonMahjongCompat
   end
 
   # Differences that come from a rule the two libraries choose differently,
-  # not from an error: riichi_engine scores two or more yakuman in one hand as
-  # a single yakuman (its rule "double_yakuman" is false and has no effect on
-  # this), the Python package adds them up (as Tenhou does).
+  # not from an error: with multiple_yakuman false riichi_engine scores two or
+  # more yakuman in one hand as a single yakuman, the Python package adds them
+  # up (as Tenhou does).
   def rule_difference(engine, py)
     return nil unless engine["yakuman"] && py["yakuman"]
     return nil unless engine["yaku"].size > 1 && engine["yaku"].map(&:first).sort == py["yaku"].map(&:first).sort
