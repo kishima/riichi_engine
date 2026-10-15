@@ -3,10 +3,15 @@ module Mahjong
     module Selectors
       class DahaiSelector
       # seat: 手の持ち主（省略すると手番の席）。その席の副露を面子として数える。
-      def self.select(hand:, state:, level:, seat: state.current_seat)
+      # allowed: 切ってよい牌（喰い替えの禁止などで絞られたとき）。nil か空ならすべて。
+      def self.select(hand:, state:, level:, seat: state.current_seat, allowed: nil)
         visible = collect_visible_tiles(state)
         melds = Array(state.fuuros && state.fuuros[seat]).size
         evals = Analysis::TileEvaluator.evaluate_all_discards(hand, visible_tiles: visible, melds: melds)
+        if allowed && !allowed.empty?
+          kept = evals.select { |tile, _| allowed.include?(tile) }
+          evals = kept unless kept.empty?
+        end
 
         case level
         when 1 then select_easy(evals, hand)

@@ -105,7 +105,10 @@ module Mahjong
         actions = if state.riichi_flags[seat]
                     state.last_tsumo ? [{ type: :dahai, tile: state.last_tsumo.to_s }] : []
                   else
-                    state.hands[seat].tiles.uniq(&:to_s).map { |tile| { type: :dahai, tile: tile.to_s } }
+                    forbidden = kuikae_tiles(state, seat, rule)
+                    state.hands[seat].tiles.uniq(&:to_s)
+                         .reject { |tile| forbidden.any? { |f| f.same_kind?(tile) } }
+                         .map { |tile| { type: :dahai, tile: tile.to_s } }
                   end
 
         if !state.riichi_flags[seat] && can_riichi?(state, seat, rule)
@@ -595,6 +598,32 @@ module Mahjong
       rescue Errors::TileNotFoundError
         nil
       end
+    end
+
+    # 喰い替え（ルール kuikae が偽のとき禁止）: ポン・チーの直後の打牌で切れない牌の種類。
+    # ポンは鳴いた牌、チーは鳴いた牌と、鳴いた牌が順子の端ならその反対側の筋の牌
+    # （45m に 3m をチーしたら 3m と 6m）。鳴いた直後でなければ空。
+    def self.kuikae_tiles(state, seat, rule)
+      return [] if rule.nil? || rule.kuikae?
+      return [] unless state.phase == :dahai && state.current_seat == seat && state.last_tsumo.nil?
+
+      fuuro = state.fuuros[seat]&.last
+      return [] unless fuuro && (fuuro.pon? || fuuro.chi?) && fuuro.called_tile
+
+      kuikae_kinds(fuuro.called_tile, fuuro.tiles, fuuro.chi?)
+    end
+
+    # called: 鳴いた牌、tiles: 面子の 3 枚、chi: チーか。
+    def self.kuikae_kinds(called, tiles, chi)
+      kinds = [Tiles::Tile.new(called.to_s)]
+      return kinds unless chi
+
+      numbers = tiles.map(&:effective_number).sort
+      suji = if called.effective_number == numbers.first then numbers.first + 3
+             elsif called.effective_number == numbers.last then numbers.last - 3
+             end
+      kinds << Tiles::Tile.new("#{suji}#{called.suit}") if suji && (1..9).cover?(suji)
+      kinds
     end
 
     def self.can_kyuushu?(state, seat)

@@ -49,6 +49,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `minkan_dora_after_discard` | Boolean | `false` | 明槓（大明槓・加槓）の新ドラを、槓の直後ではなくその後の打牌のとき（ロンの判定の前）にめくる。打牌の前に次の槓をすればそのときにめくり、嶺上開花ではめくらない。暗槓は常に直後 |
 | `agari_yame` | Boolean | `true` | アガリ止めあり（オーラスで首位の親が和了ればゲーム終了。理由 `:all_last_oya_agari`） |
 | `tenpai_yame` | Boolean | `false` | テンパイ止めあり（オーラスで首位の親がテンパイで流局すればゲーム終了。理由 `:all_last_oya_tenpai`） |
+| `kuikae` | Boolean | `true` | 喰い替えあり。`false` なら、鳴いた直後に鳴いた牌と同じ牌（チーでは筋の牌も）を切れず、切れる牌が残らない鳴きは出ない |
 
 ### Snapshots
 

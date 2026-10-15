@@ -26,6 +26,7 @@ module Mahjong
           return invalid("tile is required") if missing_value?(action[:tile])
           return invalid("tile not in hand") unless state.hands[state.current_seat].include?(action[:tile])
           return invalid("riichi player must discard the drawn tile") if riichi_tsumogiri_violation?(state, action)
+          return invalid("kuikae is not allowed") if kuikae_violation?(state, action, rule)
           valid
         when :skip
           return invalid("phase must be naki_wait") unless state.phase == :naki_wait
@@ -156,6 +157,11 @@ module Mahjong
         action[:tile].to_s != state.last_tsumo.to_s
       end
       private_class_method :riichi_tsumogiri_violation?
+      def self.kuikae_violation?(state, action, rule)
+        tile = Tiles::Tile.new(action[:tile].to_s)
+        Rounds::RoundFlow.kuikae_tiles(state, state.current_seat, rule).any? { |f| f.same_kind?(tile) }
+      end
+      private_class_method :kuikae_violation?
 
       def self.missing_value?(value)
         value.nil? || (value.respond_to?(:empty?) && value.empty?)
