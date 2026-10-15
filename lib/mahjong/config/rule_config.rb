@@ -19,7 +19,9 @@ module Mahjong
       "nishi_iri_threshold" => 30000,
       "renpuu_jantou_fu" => 2,
       "agari_yame" => true,
-      "tenpai_yame" => false
+      "tenpai_yame" => false,
+      "nan_iri" => false,
+      "sudden_death" => false
     }.freeze
 
     def initialize(config = {})

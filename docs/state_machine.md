@@ -301,6 +301,11 @@ flowchart TD
     K -->|いいえ| M([次局・親流れ])
 ```
 
+延長戦（半荘の西場は `nishi_iri`、東風戦の南場は `nan_iri`）は、最後の場の 4 局目の後に誰も
+`nishi_iri_threshold` に届いていないときに入る。`sudden_death` なら延長戦では、誰かが基準点以上になった局の後に
+終わり（理由 `sudden_death`。親を含む複数人のロンで親が連荘するときは続ける）、延長戦の場の 4 局目の後にも終わる。
+延長戦があるルールでは、アガリ止め・テンパイ止めは親が基準点以上のときだけ。
+
 | `flow.action` | 意味 |
 |---|---|
 | `:next_round` | 次局へ。`flow.next_bakaze`, `flow.next_kyoku`, `flow.next_honba`, `flow.next_oya_index` で次局情報を取得 |
