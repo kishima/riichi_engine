@@ -58,4 +58,23 @@ RSpec.describe Mahjong::Cpu::Selectors::DahaiSelector do
 
     expect(tile).to eq("7z")
   end
+
+  it "鳴いた後は副露を面子として数え、テンパイを保つ牌を切る" do
+    state = build_state
+    state.fuuros[0] = [Mahjong::State::Fuuro.new(type: :pon, tiles: tiles("5z 5z 5z"), called_tile: Mahjong::Tiles::Tile.new("5z"), from_seat: 3)]
+    hand = Mahjong::State::Hand.new(tiles("2m 3m 7m 8m 9m 6p 7p 7p 6s 7s 8s"))
+
+    [1, 2, 3].each do |level|
+      expect(described_class.select(hand:, state:, level:)).to eq("6p")
+    end
+  end
+
+  it "seat: で手の持ち主を指定できる（その席の副露を数える）" do
+    state = build_state
+    state.current_seat = 2
+    state.fuuros[0] = [Mahjong::State::Fuuro.new(type: :pon, tiles: tiles("5z 5z 5z"), called_tile: Mahjong::Tiles::Tile.new("5z"), from_seat: 3)]
+    hand = Mahjong::State::Hand.new(tiles("2m 3m 7m 8m 9m 6p 7p 7p 6s 7s 8s"))
+
+    expect(described_class.select(hand:, state:, level: 2, seat: 0)).to eq("6p")
+  end
 end

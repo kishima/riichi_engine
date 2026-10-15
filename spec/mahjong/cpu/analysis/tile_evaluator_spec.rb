@@ -29,5 +29,16 @@ RSpec.describe Mahjong::Cpu::Analysis::TileEvaluator do
 
       expect(blocked["7z"].ukeire).to be <= base["7z"].ukeire
     end
+
+    it "melds: を渡すと副露を面子として向聴数と受入を数える" do
+      # 副露 1 つ: 2m3m 789m 6p7p7p 678s。6p 切りはテンパイ（23m の両面）、7p 切りは 1 向聴。
+      hand = Mahjong::State::Hand.new(tiles("2m 3m 7m 8m 9m 6p 7p 7p 6s 7s 8s"))
+
+      result = described_class.evaluate_all_discards(hand, melds: 1)
+
+      expect(result["6p"].shanten).to eq(0)
+      expect(result["7p"].shanten).to eq(1)
+      expect(result["6p"].ukeire).to eq(8) # 1m と 4m
+    end
   end
 end
