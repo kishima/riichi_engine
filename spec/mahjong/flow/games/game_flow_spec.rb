@@ -336,8 +336,22 @@ RSpec.describe Mahjong::Flow::Games::GameFlow do
       expect(flow.reason).to eq(:all_last_oya_agari)
     end
 
-    it "サドンデスの延長戦の 4 局目は、首位の親の複数人ロンでもアガリ止め" do
+    it "サドンデスの延長戦の 4 局目は、首位の親を含む複数人ロンならアガリ止めより連荘を先にする" do
       flow = judge(hanchan_sd, info(:ron, winners: [3, 1]), bakaze: "sha", kyoku: 4, oya_index: 3, scores: [10_000, 29_000, 29_000, 32_000])
+      expect([flow.action, flow.renchan, flow.next_bakaze, flow.next_kyoku, flow.next_honba]).to eq([:next_round, true, "sha", 4, 1])
+
+      flow = judge(tonpuu_sd, info(:ron, winners: [3, 1]), bakaze: "nan", kyoku: 4, oya_index: 3, scores: [10_000, 29_000, 29_000, 32_000])
+      expect([flow.action, flow.renchan, flow.next_bakaze, flow.next_kyoku]).to eq([:next_round, true, "nan", 4])
+    end
+
+    it "サドンデスの延長戦の 4 局目でも、首位の親だけの和了はアガリ止め" do
+      flow = judge(hanchan_sd, info(:ron, winners: [3]), bakaze: "sha", kyoku: 4, oya_index: 3, scores: [10_000, 29_000, 29_000, 32_000])
+
+      expect([flow.action, flow.reason]).to eq(%i[game_end all_last_oya_agari])
+    end
+
+    it "延長戦でない南4局は、首位の親を含む複数人ロンでもアガリ止め" do
+      flow = judge(hanchan_sd, info(:ron, winners: [3, 1]), bakaze: "nan", kyoku: 4, oya_index: 3, scores: [10_000, 29_000, 29_000, 32_000])
 
       expect([flow.action, flow.reason]).to eq(%i[game_end all_last_oya_agari])
     end

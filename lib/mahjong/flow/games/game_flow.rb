@@ -26,16 +26,18 @@ module Mahjong
       next_honba = calc_next_honba(progress_snapshot, info, renchan)
 
       if renchan
-        if (stop = all_last_oya_stop(progress_snapshot, info, scores, rule))
+        # サドンデスの延長戦: 親を含む複数人のロンの連荘は、アガリ止め・サドンデスより先に続ける
+        sudden = sudden_death_round?(progress_snapshot, rule)
+        keep = sudden && info.winners.size >= 2 && info.winners.any? { |w| w[:seat] == progress_snapshot.oya_index }
+
+        if !keep && (stop = all_last_oya_stop(progress_snapshot, info, scores, rule))
           return Results::GameFlowResult.new(
             action: :game_end, reason: stop,
             next_bakaze: nil, next_kyoku: nil, next_honba: nil, next_oya_index: nil, renchan: true
           )
         end
 
-        # サドンデスの延長戦: 親を含む複数人のロンの連荘だけは続ける
-        if sudden_death_round?(progress_snapshot, rule) && reached_threshold?(scores, rule) &&
-           !(info.winners.size >= 2 && info.winners.any? { |w| w[:seat] == progress_snapshot.oya_index })
+        if sudden && !keep && reached_threshold?(scores, rule)
           return Results::GameFlowResult.new(
             action: :game_end, reason: :sudden_death,
             next_bakaze: nil, next_kyoku: nil, next_honba: nil, next_oya_index: nil, renchan: true
