@@ -684,6 +684,8 @@ module Mahjong
     def self.reveal_kan_dora(state)
       state.wanpai.reveal_new_dora!
       state.dora_hyouji = state.wanpai.dora_hyouji.dup
+      # 槓裏も同時に増える（和了の評価は RoundState#uradora_hyouji を読む）
+      state.uradora_hyouji = state.wanpai.uradora_hyouji.dup
     end
     private_class_method :reveal_kan_dora
 
