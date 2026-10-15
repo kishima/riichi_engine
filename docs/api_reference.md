@@ -32,6 +32,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `kuitan` | Boolean | `true` | 食い断あり |
 | `atozuke` | Boolean | `true` | 後付けあり |
 | `double_yakuman` | Boolean | `false` | ダブル役満あり |
+| `multiple_yakuman` | Boolean | `false` | 複合役満あり（役満が重なれば役満の数だけ倍。偽なら役満 1 つ） |
 | `kazoe_yakuman` | Boolean | `true` | 数え役満あり |
 | `kiriage_mangan` | Boolean | `false` | 切り上げ満貫あり |
 | `triple_ron_draw` | Boolean | `true` | 三家和で流局 |

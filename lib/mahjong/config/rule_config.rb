@@ -10,6 +10,7 @@ module Mahjong
       "kuitan" => true,
       "atozuke" => true,
       "double_yakuman" => false,
+      "multiple_yakuman" => false,
       "kazoe_yakuman" => true,
       "kiriage_mangan" => false,
       "triple_ron_draw" => true,
