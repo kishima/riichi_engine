@@ -182,7 +182,7 @@ module Mahjong
 
     def self.process_dahai(state, action, rule)
       seat = state.current_seat
-      tile = Tiles::Tile.new(action[:tile])
+      tile = hand_tile(state.hands[seat], action[:tile])
       tsumogiri = state.last_tsumo && tile.same_kind?(state.last_tsumo) && state.hands[seat].count_of(tile) <= 1
 
       state.hands[seat] = state.hands[seat].remove(tile)
@@ -226,12 +226,12 @@ module Mahjong
     def self.process_pon(state, action, _rule)
       seat = action[:seat]
       called_tile = state.last_dahai[:tile]
-      tiles = action[:tiles] || pon_choices(state, seat, called_tile)
+      tiles = hand_tiles(state.hands[seat], action[:tiles] || pon_choices(state, seat, called_tile))
 
       state.hands[seat] = state.hands[seat].remove_tiles(tiles)
       state.fuuros[seat] << State::Fuuro.new(
         type: :pon,
-        tiles: (tiles + [called_tile.to_s]).map { |t| Tiles::Tile.new(t) },
+        tiles: tiles + [called_tile],
         called_tile: called_tile,
         from_seat: state.last_dahai[:seat]
       )
@@ -243,18 +243,18 @@ module Mahjong
       state.last_tsumo = nil
       clear_ippatsu_flags(state)
 
-      [{ type: :pon, seat: seat, tiles: tiles }]
+      [{ type: :pon, seat: seat, tiles: tiles.map(&:to_s) }]
     end
 
     def self.process_chi(state, action, _rule)
       seat = action[:seat]
       called_tile = state.last_dahai[:tile]
-      tiles = action[:tiles] || action[:choice] || chi_choices(state, seat, called_tile).first
+      tiles = hand_tiles(state.hands[seat], action[:tiles] || action[:choice] || chi_choices(state, seat, called_tile).first)
 
       state.hands[seat] = state.hands[seat].remove_tiles(tiles)
       state.fuuros[seat] << State::Fuuro.new(
         type: :chi,
-        tiles: (tiles + [called_tile.to_s]).map { |t| Tiles::Tile.new(t) }.sort,
+        tiles: (tiles + [called_tile]).sort,
         called_tile: called_tile,
         from_seat: state.last_dahai[:seat]
       )
@@ -266,7 +266,7 @@ module Mahjong
       state.last_tsumo = nil
       clear_ippatsu_flags(state)
 
-      [{ type: :chi, seat: seat, tiles: tiles }]
+      [{ type: :chi, seat: seat, tiles: tiles.map(&:to_s) }]
     end
 
     def self.process_riichi(state, action, rule)
@@ -284,10 +284,10 @@ module Mahjong
     def self.process_ankan(state, action, _rule)
       seat = action[:seat]
       tile = Tiles::Tile.new(action[:tile])
-      removed = Array.new(4, tile.to_s)
+      removed = state.hands[seat].tiles.select { |t| t.same_kind?(tile) }.first(4)
 
       state.hands[seat] = state.hands[seat].remove_tiles(removed)
-      state.fuuros[seat] << State::Fuuro.new(type: :ankan, tiles: removed.map { Tiles::Tile.new(_1) })
+      state.fuuros[seat] << State::Fuuro.new(type: :ankan, tiles: removed)
       apply_kan_transition(state, seat, tile, open_kan: false)
 
       [{ type: :ankan, seat: seat, tile: tile.to_s }]
@@ -295,7 +295,7 @@ module Mahjong
 
     def self.process_kakan(state, action, rule)
       seat = action[:seat]
-      tile = Tiles::Tile.new(action[:tile])
+      tile = hand_tile(state.hands[seat], action[:tile])
       target_fuuro = state.fuuros[seat].find { |fuuro| fuuro.pon? && fuuro.tiles.all? { |t| t.same_kind?(tile) } }
       raise Errors::InvalidActionError, "pon fuuro not found for kakan" unless target_fuuro
 
@@ -320,10 +320,10 @@ module Mahjong
     def self.process_daiminkan(state, action, _rule)
       seat = action[:seat]
       tile = state.last_dahai[:tile]
-      removed = Array.new(3, tile.to_s)
+      removed = state.hands[seat].tiles.select { |t| t.same_kind?(tile) }.first(3)
 
       state.hands[seat] = state.hands[seat].remove_tiles(removed)
-      state.fuuros[seat] << State::Fuuro.new(type: :daiminkan, tiles: (removed + [tile.to_s]).map { Tiles::Tile.new(_1) }, called_tile: tile, from_seat: state.last_dahai[:seat])
+      state.fuuros[seat] << State::Fuuro.new(type: :daiminkan, tiles: removed + [tile], called_tile: tile, from_seat: state.last_dahai[:seat])
       state.kawas[state.last_dahai[:seat]].mark_last_called!
       state.current_seat = seat
       state.menzen_flags[seat] = false
@@ -425,6 +425,21 @@ module Mahjong
         result.yakuman? || result.total_han.to_i.positive?
       end
     end
+
+    # 手から出す牌。指定と同じ牌（赤五か否かまで）を優先し、無ければ同じ種類の牌。
+    def self.hand_tile(hand, notation)
+      tile = Tiles::Tile.new(notation)
+      hand.tiles.find { |t| t == tile } || hand.tiles.find { |t| t.same_kind?(tile) } || tile
+    end
+    private_class_method :hand_tile
+
+    def self.hand_tiles(hand, notations)
+      notations.each_with_object([]) do |notation, picked|
+        rest = picked.reduce(hand) { |h, t| h.remove(t) }
+        picked << hand_tile(rest, notation)
+      end
+    end
+    private_class_method :hand_tiles
 
     def self.remove_one_tile(tiles, agari_tile)
       removed = false

@@ -215,6 +215,94 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
     expect(flow_state.chankan_tile).to be_nil
   end
 
+  context "赤五" do
+    let(:flow_state) do
+      described_class.setup(game_snapshot:, rule:, seed: "red-five-seed").tap do |flow_state|
+        4.times { |seat| flow_state.hands[seat] = Mahjong::State::Hand.new([]) }
+        flow_state.phase = :dahai
+        flow_state.current_seat = 0
+      end
+    end
+
+    it "五を切ると赤五は手に残る" do
+      flow_state.hands[0] = Mahjong::State::Hand.new(tiles("0m 5m 1p"))
+      flow_state.last_tsumo = Mahjong::Tiles::Tile.new("1p")
+
+      described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "5m" }, rule:)
+
+      expect(flow_state.kawas[0].to_a.last[:tile]).to eq("5m")
+      expect(flow_state.hands[0].to_a).to eq(%w[0m 1p])
+    end
+
+    it "赤五しか無い手で 5m を切ると河には赤五が出る" do
+      flow_state.hands[0] = Mahjong::State::Hand.new(tiles("0m 1p"))
+      flow_state.last_tsumo = Mahjong::Tiles::Tile.new("1p")
+
+      described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "5m" }, rule:)
+
+      expect(flow_state.kawas[0].to_a.last[:tile]).to eq("0m")
+      expect(flow_state.hands[0].to_a).to eq(%w[1p])
+    end
+
+    it "ポンは指定した牌で副露し、赤五は手に残る" do
+      flow_state.hands[0] = Mahjong::State::Hand.new(tiles("5m"))
+      flow_state.hands[1] = Mahjong::State::Hand.new(tiles("0m 5m 5m 3p"))
+      flow_state.last_tsumo = Mahjong::Tiles::Tile.new("5m")
+      # 大明槓の選択肢を出さないように、嶺上牌を空にしておく
+      flow_state.wanpai = Mahjong::Tiles::Wanpai.from_hash(flow_state.wanpai.to_h.merge(rinshan: []))
+
+      described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "5m" }, rule:)
+      described_class.apply_action(state: flow_state, action: { type: :pon, seat: 1, tiles: %w[5m 5m] }, rule:)
+
+      expect(flow_state.fuuros[1].last.tiles.map(&:to_s)).to eq(%w[5m 5m 5m])
+      expect(flow_state.hands[1].to_a).to eq(%w[0m 3p])
+    end
+
+    it "チーで赤五を使うと副露に赤五が入る" do
+      flow_state.hands[0] = Mahjong::State::Hand.new(tiles("3m"))
+      flow_state.hands[1] = Mahjong::State::Hand.new(tiles("4m 5m 0m 3p"))
+      flow_state.last_tsumo = Mahjong::Tiles::Tile.new("3m")
+
+      described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "3m" }, rule:)
+      described_class.apply_action(state: flow_state, action: { type: :chi, seat: 1, tiles: %w[4m 0m] }, rule:)
+
+      expect(flow_state.fuuros[1].last.tiles.map(&:to_s)).to eq(%w[3m 4m 0m])
+      expect(flow_state.hands[1].to_a).to eq(%w[5m 3p])
+    end
+
+    it "暗槓の副露に赤五が残る" do
+      flow_state.hands[0] = Mahjong::State::Hand.new(tiles("5m 0m 5m 5m 1p"))
+      flow_state.last_tsumo = Mahjong::Tiles::Tile.new("1p")
+
+      described_class.apply_action(state: flow_state, action: { type: :ankan, seat: 0, tile: "5m" }, rule:)
+
+      expect(flow_state.fuuros[0].last.tiles.map(&:to_s).sort).to eq(%w[0m 5m 5m 5m])
+    end
+
+    it "大明槓の副露に赤五が残る" do
+      flow_state.hands[0] = Mahjong::State::Hand.new(tiles("5m"))
+      flow_state.hands[1] = Mahjong::State::Hand.new(tiles("0m 5m 5m 3p"))
+      flow_state.last_tsumo = Mahjong::Tiles::Tile.new("5m")
+
+      described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "5m" }, rule:)
+      described_class.apply_action(state: flow_state, action: { type: :daiminkan, seat: 1 }, rule:)
+
+      expect(flow_state.fuuros[1].last.tiles.map(&:to_s).sort).to eq(%w[0m 5m 5m 5m])
+    end
+
+    it "加槓で足した赤五が副露に入る" do
+      flow_state.hands[0] = Mahjong::State::Hand.new(tiles("0m 1p 2p 3p"))
+      flow_state.fuuros[0] = [
+        Mahjong::State::Fuuro.new(type: :pon, tiles: tiles("5m 5m 5m"), called_tile: Mahjong::Tiles::Tile.new("5m"), from_seat: 1)
+      ]
+
+      described_class.apply_action(state: flow_state, action: { type: :kakan, seat: 0, tile: "5m" }, rule:)
+
+      expect(flow_state.fuuros[0].last.tiles.map(&:to_s).sort).to eq(%w[0m 5m 5m 5m])
+      expect(flow_state.hands[0].tiles.map(&:to_s)).not_to include("0m")
+    end
+  end
+
   it "kakan 後に槍槓可能なら ron 待ちに入る" do
     flow_state = described_class.setup(game_snapshot:, rule:, seed: "kakan-chankan-seed")
     flow_state.phase = :dahai
