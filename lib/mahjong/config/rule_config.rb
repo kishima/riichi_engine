@@ -27,7 +27,8 @@ module Mahjong
       "minkan_dora_after_discard" => false,
       "agari_yame" => true,
       "tenpai_yame" => false,
-      "kuikae" => true
+      "kuikae" => true,
+      "riichi_ankan" => false
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）

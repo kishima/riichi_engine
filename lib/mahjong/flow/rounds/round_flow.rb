@@ -120,11 +120,11 @@ module Mahjong
           actions << { type: :tsumo_agari }
         end
 
-        unless state.riichi_flags[seat]
-          ankan_candidates(state, seat, rule).each do |tile|
-            actions << { type: :ankan, tile: tile }
-          end
+        ankan_candidates(state, seat, rule).each do |tile|
+          actions << { type: :ankan, tile: tile }
+        end
 
+        unless state.riichi_flags[seat]
           kakan_candidates(state, seat).each do |tile|
             actions << { type: :kakan, tile: tile }
           end
@@ -644,15 +644,36 @@ module Mahjong
       Detectors::NakiDetector.find_chi_sets(state.hands[seat], tile)
     end
 
-    def self.ankan_candidates(state, seat, _rule)
+    def self.ankan_candidates(state, seat, rule)
       return [] unless kan_available?(state)
 
-      state.hands[seat].tiles
-        .group_by { |tile| [tile.suit, tile.effective_number] }
-        .select { |_key, tiles| tiles.size >= 4 }
-        .values
-        .map { |tiles| tiles.first.to_s }
+      candidates = state.hands[seat].tiles
+                        .group_by { |tile| [tile.suit, tile.effective_number] }
+                        .select { |_key, tiles| tiles.size >= 4 }
+                        .values
+                        .map { |tiles| tiles.first.to_s }
+      return candidates unless state.riichi_flags[seat]
+
+      riichi_ankan_candidates(state, seat, rule, candidates)
     end
+
+    # リーチ後の暗槓（ルール riichi_ankan）: 自摸った牌の暗槓だけ（送り槓は不可）で、
+    # 槓の後も待ちの牌の種類が変わらないもの。手の形や役が変わるかは問わない。
+    def self.riichi_ankan_candidates(state, seat, rule, candidates)
+      drawn = state.last_tsumo
+      return [] unless rule&.riichi_ankan? && drawn
+
+      hand = state.hands[seat]
+      candidates.select do |name|
+        next false unless Tiles::Tile.new(name).same_kind?(drawn)
+
+        before = Scoring::Judges::MachiJudge.machi_tile_indices(hand.remove(drawn).to_34).sort
+        rest = hand.tiles.reject { |t| t.same_kind?(drawn) }
+        after = Scoring::Judges::MachiJudge.machi_tile_indices(Tiles::TileSet.to_34(rest)).sort
+        before.any? && before == after
+      end
+    end
+    private_class_method :riichi_ankan_candidates
 
     def self.kakan_candidates(state, seat)
       return [] unless kan_available?(state)

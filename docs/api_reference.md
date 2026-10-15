@@ -50,6 +50,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `agari_yame` | Boolean | `true` | アガリ止めあり（オーラスで首位の親が和了ればゲーム終了。理由 `:all_last_oya_agari`） |
 | `tenpai_yame` | Boolean | `false` | テンパイ止めあり（オーラスで首位の親がテンパイで流局すればゲーム終了。理由 `:all_last_oya_tenpai`） |
 | `kuikae` | Boolean | `true` | 喰い替えあり。`false` なら、鳴いた直後に鳴いた牌と同じ牌（チーでは筋の牌も）を切れず、切れる牌が残らない鳴きは出ない |
+| `riichi_ankan` | Boolean | `false` | リーチ後の暗槓あり。自摸った牌の暗槓（送り槓は不可）で、待ちの牌の種類が変わらないときだけ |
 
 ### Snapshots
 
