@@ -293,7 +293,7 @@ flowchart TD
     B -->|いいえ| D{連荘?}
 
     D -->|"親が和了 / 親テンパイ流局 / 途中流局"| E{"オーラスかつ<br/>親が首位?"}
-    E -->|はい| F(["ゲーム終了<br/>理由: all_last_oya_agari"])
+    E -->|"はい（agari_yame / tenpai_yame）"| F(["ゲーム終了<br/>理由: all_last_oya_agari<br/>/ all_last_oya_tenpai"])
     E -->|いいえ| G(["次局・連荘<br/>本場 +1"])
 
     D -->|親流れ| H["oya_index +1 / kyoku +1"]

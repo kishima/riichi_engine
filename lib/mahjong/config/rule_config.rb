@@ -24,7 +24,9 @@ module Mahjong
       "suucha_riichi" => false,
       "nagashi_mangan" => false,
       "pao" => [],
-      "minkan_dora_after_discard" => false
+      "minkan_dora_after_discard" => false,
+      "agari_yame" => true,
+      "tenpai_yame" => false
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）

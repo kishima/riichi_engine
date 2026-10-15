@@ -47,6 +47,8 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nagashi_mangan` | Boolean | `false` | 流し満貫あり（荒牌流局の `round_end_info[:nagashi_seats]` に成立した席。支払いは `calculate_nagashi_mangan_payments`） |
 | `pao` | Array | `[]` | 包（責任払い）にする役満の名前（`"daisangen"`・`"daisuushii"`・`"suukantsu"`）。空なら包なし |
 | `minkan_dora_after_discard` | Boolean | `false` | 明槓（大明槓・加槓）の新ドラを、槓の直後ではなくその後の打牌のとき（ロンの判定の前）にめくる。打牌の前に次の槓をすればそのときにめくり、嶺上開花ではめくらない。暗槓は常に直後 |
+| `agari_yame` | Boolean | `true` | アガリ止めあり（オーラスで首位の親が和了ればゲーム終了。理由 `:all_last_oya_agari`） |
+| `tenpai_yame` | Boolean | `false` | テンパイ止めあり（オーラスで首位の親がテンパイで流局すればゲーム終了。理由 `:all_last_oya_tenpai`） |
 
 ### Snapshots
 

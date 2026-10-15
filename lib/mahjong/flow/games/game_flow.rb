@@ -26,9 +26,9 @@ module Mahjong
       next_honba = calc_next_honba(progress_snapshot, info, renchan)
 
       if renchan
-        if all_last_oya_agari?(progress_snapshot, info, scores, rule)
+        if (stop = all_last_oya_stop(progress_snapshot, info, scores, rule))
           return Results::GameFlowResult.new(
-            action: :game_end, reason: :all_last_oya_agari,
+            action: :game_end, reason: stop,
             next_bakaze: nil, next_kyoku: nil, next_honba: nil, next_oya_index: nil, renchan: true
           )
         end
@@ -168,11 +168,27 @@ module Mahjong
       end
     end
 
+    # オーラスで親が首位のまま連荘するときに終わるか（アガリ止め・テンパイ止め）。
+    # 終わるなら理由（:all_last_oya_agari / :all_last_oya_tenpai）、続けるなら nil。
+    def self.all_last_oya_stop(progress_snapshot, round_end_info, scores, rule)
+      return nil unless all_last_oya_top?(progress_snapshot, scores, rule)
+
+      oya = progress_snapshot.oya_index
+      return :all_last_oya_agari if rule.agari_yame? && round_end_info.winners.any? { |winner| winner[:seat] == oya }
+      return :all_last_oya_tenpai if rule.tenpai_yame? && round_end_info.result_type == :ryuukyoku &&
+                                     round_end_info.tenpai_seats.include?(oya)
+
+      nil
+    end
+
     def self.all_last_oya_agari?(progress_snapshot, round_end_info, scores, rule)
+      all_last_oya_stop(progress_snapshot, round_end_info, scores, rule) == :all_last_oya_agari
+    end
+
+    def self.all_last_oya_top?(progress_snapshot, scores, rule)
       is_all_last = (progress_snapshot.bakaze == "nan" && progress_snapshot.kyoku == 4 && rule.game_type == "hanchan") ||
                     (progress_snapshot.bakaze == "ton" && progress_snapshot.kyoku == 4 && %w[tonpuu tonpuusen].include?(rule.game_type))
       return false unless is_all_last
-      return false unless round_end_info.winners.any? { |winner| winner[:seat] == progress_snapshot.oya_index }
 
       scores[progress_snapshot.oya_index] == scores.values.max && scores[progress_snapshot.oya_index].positive?
     end
