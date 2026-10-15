@@ -15,7 +15,7 @@ module Mahjong
           fu += 2
         end
 
-        fu += context.all_mentsu.sum(&:fu)
+        fu += mentsu_fu(context)
         fu += jantou_fu(context)
         fu += machi_fu(context.machi_type)
         fu = 30 if !context.is_menzen && fu == 20
@@ -35,6 +35,17 @@ module Mahjong
         return false if context.bakaze_yakuhai?(jantou)
 
         true
+      end
+
+      def self.mentsu_fu(context)
+        total = context.all_mentsu.sum(&:fu)
+        return total unless context.agari_type == :ron && context.machi_type == :shanpon
+
+        # ロンで完成した双碰の刻子は明刻（暗刻の符の半分）
+        ron_koutsu = context.all_mentsu.find do |m|
+          m.koutsu? && m.closed? && m.tiles.first.same_kind?(context.agari_tile)
+        end
+        ron_koutsu ? total - ron_koutsu.fu / 2 : total
       end
 
       def self.jantou_fu(context)

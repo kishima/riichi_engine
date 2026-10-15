@@ -41,6 +41,24 @@ RSpec.describe Mahjong::Scoring::Calculators::FuCalculator do
       expect(described_class.jantou_fu(ctx)).to eq(4)
     end
 
+    it "双碰待ちのロンで完成した刻子は明刻の符で数える" do
+      ctx = yaku_context_for("5z 5z 5z 2m 2m 2m 6p 7p 8p 3s 4s 5s 9p 9p",
+                             agari_tile: Mahjong::Tiles::Tile.new("2m"), agari_type: :ron,
+                             machi_type: :shanpon, jikaze: "sha")
+
+      # 20 + 門前ロン 10 + 白の暗刻 8 + 2m の明刻 2 = 40
+      expect(described_class.calculate(ctx)).to eq(40)
+    end
+
+    it "双碰待ちのツモで完成した刻子は暗刻の符で数える" do
+      ctx = yaku_context_for("5z 5z 5z 2m 2m 2m 6p 7p 8p 3s 4s 5s 9p 9p",
+                             agari_tile: Mahjong::Tiles::Tile.new("2m"), agari_type: :tsumo,
+                             machi_type: :shanpon, jikaze: "sha")
+
+      # 20 + ツモ 2 + 白の暗刻 8 + 2m の暗刻 4 = 34 → 40
+      expect(described_class.calculate(ctx)).to eq(40)
+    end
+
     it "食いピンフ形は30符" do
       chi = Mahjong::State::Fuuro.new(type: :chi, tiles: tiles("1m 2m 3m"))
       ctx = yaku_context_for("4m 5m 6m 7m 8m 9m 1p 2p 3p 2z 2z",
