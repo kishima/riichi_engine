@@ -95,6 +95,7 @@ RSpec.describe Mahjong::Flow::Detectors::NakiDetector do
     )
 
     expect(result[1]).to be_nil
-    expect(result[2]).to be_nil
+    # seat 2 は 5m のシャンポン待ちで、河底撈魚の 1 翻があるのでロンだけは出る
+    expect(result[2].map { |a| a[:type] }).to eq([:ron_agari])
   end
 end

@@ -345,6 +345,50 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
     expect(result.round_end_info[:type]).to eq(:ryuukyoku)
   end
 
+  it "最後の打牌は河底撈魚だけでロンでき、和了の評価に河底撈魚が付く" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "houtei-seed")
+    4.times { |seat| flow_state.hands[seat] = Mahjong::State::Hand.new([]) }
+    flow_state.hands[0] = Mahjong::State::Hand.new(tiles("3s"))
+    flow_state.hands[1] = Mahjong::State::Hand.new(tiles("1m 2m 3m 4p 5p 6p 7s 8s 9s 9m 9m 2s 4s"))
+    flow_state.wall = Mahjong::Tiles::Wall.new([])
+    flow_state.phase = :dahai
+    flow_state.current_seat = 0
+    flow_state.last_tsumo = Mahjong::Tiles::Tile.new("3s")
+
+    described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "3s" }, rule:)
+
+    expect(flow_state.phase).to eq(:naki_wait)
+    expect(described_class.available_actions(state: flow_state, seat: 1, rule:)).to include({ type: :ron_agari })
+
+    described_class.apply_action(state: flow_state, action: { type: :ron_agari, seat: 1 }, rule:)
+    snapshot = Mahjong::Snapshots::WinEvaluationSnapshot.new(bakaze: "ton", oya_index: 0, honba: 0, kyoutaku: 0, jikaze: "nan")
+    winner_info, = RiichiEngine::API.evaluate_win(state: flow_state, seat: 1, agari_type: :ron,
+                                                  agari_tile: Mahjong::Tiles::Tile.new("3s"), rule:,
+                                                  extra_flags: {}, snapshot:)
+
+    expect(winner_info[:yaku].map { |entry| entry[:name] }).to include("houtei")
+  end
+
+  it "最後の自摸の和了は海底摸月で、河底撈魚は付かない" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "haitei-seed")
+    flow_state.hands[1] = Mahjong::State::Hand.new(tiles("1m 2m 3m 4p 5p 6p 7s 8s 9s 9m 9m 2s 4s 3s"))
+    flow_state.first_turn_flags[1] = false
+    flow_state.wall = Mahjong::Tiles::Wall.new([])
+    flow_state.phase = :dahai
+    flow_state.current_seat = 1
+    flow_state.last_tsumo = Mahjong::Tiles::Tile.new("3s")
+    snapshot = Mahjong::Snapshots::WinEvaluationSnapshot.new(bakaze: "ton", oya_index: 0, honba: 0, kyoutaku: 0, jikaze: "nan")
+
+    described_class.apply_action(state: flow_state, action: { type: :tsumo_agari, seat: 1 }, rule:)
+    winner_info, = RiichiEngine::API.evaluate_win(state: flow_state, seat: 1, agari_type: :tsumo,
+                                                  agari_tile: Mahjong::Tiles::Tile.new("3s"), rule:,
+                                                  extra_flags: {}, snapshot:)
+
+    names = winner_info[:yaku].map { |entry| entry[:name] }
+    expect(names).to include("haitei")
+    expect(names).not_to include("houtei")
+  end
+
   it "九種九牌で round_end になる" do
     flow_state = described_class.setup(game_snapshot:, rule:, seed: "kyuushu-seed")
     flow_state.phase = :dahai
