@@ -41,6 +41,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
 | `pao` | Array | `[]` | 包（責任払い）にする役満の名前（`"daisangen"`・`"daisuushii"`・`"suukantsu"`）。空なら包なし |
+| `pao_honba` | String | `"discarder"` | 包のある役満を責任者以外がロンしたときの積み棒を払う席。`"discarder"`（放銃者）か `"liable"`（責任者） |
 
 ### Snapshots
 
@@ -286,7 +287,7 @@ UI 表示用に情報が必要な場合はこちらを使います。
 | 和了 | 包の分 | 積み棒 |
 |---|---|---|
 | ツモ | 責任者がロンと同じ額を全額 | 責任者 |
-| 責任者以外からのロン | 放銃者と責任者が半分ずつ | 放銃者 |
+| 責任者以外からのロン | 放銃者と責任者が半分ずつ | 放銃者（`pao_honba` が `"liable"` なら責任者） |
 | 責任者からのロン | 責任者が全額 | 責任者 |
 
 包でない役満が重なっている分（複合役満）は、ふつうのツモ・ロンと同じに払います。

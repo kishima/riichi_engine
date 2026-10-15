@@ -18,7 +18,8 @@ module Mahjong
       "nishi_iri" => false,
       "nishi_iri_threshold" => 30000,
       "renpuu_jantou_fu" => 2,
-      "pao" => []
+      "pao" => [],
+      "pao_honba" => "discarder"
     }.freeze
 
     def initialize(config = {})
