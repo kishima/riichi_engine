@@ -3,7 +3,8 @@ module Mahjong
     module Calculators
       class ScoreCalculator
         # yakuman_count: 役満の数（複合役満のとき 2 以上。基本点が役満の数だけ倍になる）
-        def self.calculate(fu:, han:, is_oya:, agari_type:, honba: 0, kyoutaku: 0, is_yakuman: false, rule: nil, yakuman_count: 1)
+        # pao: 包の分 [{ seat:, base_points: }]（ScoreResult#score_changes が使う。payments は変えない）
+        def self.calculate(fu:, han:, is_oya:, agari_type:, honba: 0, kyoutaku: 0, is_yakuman: false, rule: nil, yakuman_count: 1, pao: [])
           count = is_yakuman ? [yakuman_count.to_i, 1].max : 1
           base = base_points(fu, han, is_yakuman, rule) * count
           payments = compute_payments(base, is_oya, agari_type, honba)
@@ -19,7 +20,8 @@ module Mahjong
             total: payments[:total],
             kyoutaku_bonus: kyoutaku * 1000,
             honba: honba,
-            is_yakuman: is_yakuman
+            is_yakuman: is_yakuman,
+            pao: pao
           )
         end
 

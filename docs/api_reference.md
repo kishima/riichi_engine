@@ -45,6 +45,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `suukaikan` | Boolean | `false` | 四槓散了で途中流局（2 人以上で槓が 4 つになった後の打牌が通ったとき。1 人の 4 槓では流局しない） |
 | `suucha_riichi` | Boolean | `false` | 四家立直で途中流局（4 人目のリーチの打牌が通ったとき。供託は場に残る） |
 | `nagashi_mangan` | Boolean | `false` | 流し満貫あり（荒牌流局の `round_end_info[:nagashi_seats]` に成立した席。支払いは `calculate_nagashi_mangan_payments`） |
+| `pao` | Array | `[]` | 包（責任払い）にする役満の名前（`"daisangen"`・`"daisuushii"`・`"suukantsu"`）。空なら包なし |
 
 ### Snapshots
 
@@ -313,6 +314,23 @@ UI 表示用に情報が必要な場合はこちらを使います。
 |---|---|---|
 | `winner_info` | `Hash` | 役名・翻数・符を含む情報 |
 | `score_result` | `Mahjong::Scoring::ValueObjects::ScoreResult` | 点数・各プレイヤーへの支払い情報（`.payments` で取得） |
+
+#### 包（責任払い）
+
+ルール `pao` に挙げた役満は、確定させる鳴きをさせた打牌者が責任を負います。大三元は 3 つ目の三元牌の面子、
+大四喜は 4 つ目の風牌の面子をポンか大明槓させた打牌者、四槓子は 4 つ目の槓を大明槓させた打牌者です
+（`RoundState#pao_seats` に `{ 和了る席 => { 役満の名前 => 責任を負う席 } }` で残ります）。
+
+その役満で和了ると、`winner_info[:pao]` に `[{ seat:, yaku: }]` が入り、`score_result.score_changes` が包の分を
+次のように割り振ります（`payments` は手の値のままです）。
+
+| 和了 | 包の分 | 積み棒 |
+|---|---|---|
+| ツモ | 責任者がロンと同じ額を全額 | 責任者 |
+| 責任者以外からのロン | 放銃者と責任者が半分ずつ | 放銃者 |
+| 責任者からのロン | 責任者が全額 | 責任者 |
+
+包でない役満が重なっている分（複合役満）は、ふつうのツモ・ロンと同じに払います。
 
 ---
 

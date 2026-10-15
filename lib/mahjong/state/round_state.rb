@@ -19,6 +19,8 @@ module Mahjong
     attr_accessor :first_turn_flags, :kan_count, :kan_by_player
     attr_accessor :pending_actions, :rinshan_flag, :chankan_tile
     attr_accessor :dojun_furiten_flags, :riichi_furiten_flags
+    # 包（責任払い）: { 和了る席 => { 役満の名前 => 責任を負う席 } }（ルール pao にある役満だけ）
+    attr_accessor :pao_seats
 
     def initialize
       @hands         = {}
@@ -38,6 +40,7 @@ module Mahjong
       @chankan_tile  = nil
       @dojun_furiten_flags = { 0 => false, 1 => false, 2 => false, 3 => false }
       @riichi_furiten_flags = { 0 => false, 1 => false, 2 => false, 3 => false }
+      @pao_seats = { 0 => {}, 1 => {}, 2 => {}, 3 => {} }
       @junme         = 0
       @phase         = :tsumo
       @state_version = 0
@@ -89,7 +92,8 @@ module Mahjong
         double_riichi_flags: double_riichi_flags, menzen_flags: menzen_flags,
         first_turn_flags: first_turn_flags, kan_count: kan_count, kan_by_player: kan_by_player,
         pending_actions: pending_actions, rinshan_flag: rinshan_flag, chankan_tile: chankan_tile&.to_s,
-        dojun_furiten_flags: dojun_furiten_flags, riichi_furiten_flags: riichi_furiten_flags
+        dojun_furiten_flags: dojun_furiten_flags, riichi_furiten_flags: riichi_furiten_flags,
+        pao_seats: pao_seats
       }
       )
     end
@@ -148,6 +152,7 @@ module Mahjong
       state.chankan_tile = data["chankan_tile"] ? Tiles::Tile.new(data["chankan_tile"]) : nil
       state.dojun_furiten_flags = symbolize_int_hash(data["dojun_furiten_flags"])
       state.riichi_furiten_flags = symbolize_int_hash(data["riichi_furiten_flags"])
+      state.pao_seats = deserialize_pao_seats(data["pao_seats"])
       state
     rescue JSON::ParserError, ArgumentError, TypeError, KeyError => e
       raise Errors::EngineError, "RoundState の復元に失敗しました: #{e.message}"
@@ -163,6 +168,14 @@ module Mahjong
       return nil unless value
 
       { seat: value["seat"], tile: value["tile"] ? Tiles::Tile.new(value["tile"]) : nil }
+    end
+
+    def self.deserialize_pao_seats(hash)
+      seats = { 0 => {}, 1 => {}, 2 => {}, 3 => {} }
+      (hash || {}).each do |seat, liabilities|
+        seats[seat.to_i] = (liabilities || {}).to_h { |yaku, liable| [yaku.to_s, liable.to_i] }
+      end
+      seats
     end
 
     def self.symbolize_int_hash(hash)
