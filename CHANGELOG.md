@@ -13,11 +13,11 @@
 - **国士無双の暗槓の搶槓** — `kokushi_ankan_chankan`（既定 `false`）（`feat/kokushi-ankan-chankan`）
 - **包のロンの積み棒** — `pao_honba`（既定 `"discarder"`、`"liable"` で責任者）（`feat/pao-honba`）
 - **天和の和了牌** — `tenhou_best_tile`（既定 `false`）。最も高い点になる牌を和了牌とする（`feat/tenhou-best-tile`）
-- **南入・サドンデス** — `nan_iri`・`sudden_death`（既定 `false`）。延長戦のあるルールではアガリ止め・テンパイ止めに基準点が要る（`feat/sudden-death`）
+- **南入・サドンデス** — `nan_iri`・`sudden_death`（既定 `false`）。延長戦のあるルールではアガリ止め・テンパイ止めに基準点が要る。延長戦では親を含む複数人のロンの連荘を、サドンデスと延長戦の 4 局目のアガリ止めより先にする（`feat/sudden-death`）
 
 ### 試験
 
-- 473 examples。Python `mahjong` との突き合わせは違い 0。
+- 475 examples。Python `mahjong` との突き合わせは違い 0。
 
 ## 0.1.1.fmrb3（Fork の fmrb ブランチ、未公開）
 
