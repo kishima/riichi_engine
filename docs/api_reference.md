@@ -40,6 +40,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nishi_iri` | Boolean | `false` | 西入あり |
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
+| `kuikae` | Boolean | `true` | 喰い替えあり。`false` なら、鳴いた直後に鳴いた牌と同じ牌（チーでは筋の牌も）を切れず、切れる牌が残らない鳴きは出ない |
 
 ### Snapshots
 

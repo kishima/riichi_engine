@@ -25,6 +25,7 @@ module Mahjong
           return invalid("seat mismatch") unless action[:seat] == state.current_seat
           return invalid("tile is required") if missing_value?(action[:tile])
           return invalid("tile not in hand") unless state.hands[state.current_seat].include?(action[:tile])
+          return invalid("kuikae is not allowed") if kuikae_violation?(state, action, rule)
           valid
         when :skip
           return invalid("phase must be naki_wait") unless state.phase == :naki_wait
@@ -99,6 +100,12 @@ module Mahjong
 
         resolved[:seat] == action[:seat] && resolved[:type].to_sym == action[:type].to_sym
       end
+
+      def self.kuikae_violation?(state, action, rule)
+        tile = Tiles::Tile.new(action[:tile].to_s)
+        Rounds::RoundFlow.kuikae_tiles(state, state.current_seat, rule).any? { |f| f.same_kind?(tile) }
+      end
+      private_class_method :kuikae_violation?
 
       def self.missing_value?(value)
         value.nil? || (value.respond_to?(:empty?) && value.empty?)

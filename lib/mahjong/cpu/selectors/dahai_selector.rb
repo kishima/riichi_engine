@@ -2,9 +2,14 @@ module Mahjong
   module Cpu
     module Selectors
       class DahaiSelector
-      def self.select(hand:, state:, level:)
+      # allowed: 切ってよい牌（喰い替えの禁止などで絞られたとき）。nil か空ならすべて。
+      def self.select(hand:, state:, level:, allowed: nil)
         visible = collect_visible_tiles(state)
         evals = Analysis::TileEvaluator.evaluate_all_discards(hand, visible_tiles: visible)
+        if allowed && !allowed.empty?
+          kept = evals.select { |tile, _| allowed.include?(tile) }
+          evals = kept unless kept.empty?
+        end
 
         case level
         when 1 then select_easy(evals, hand)

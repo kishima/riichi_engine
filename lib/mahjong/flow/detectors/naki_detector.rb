@@ -35,11 +35,14 @@ module Mahjong
           end
 
           seat_options << { type: :daiminkan } if kan_available?(state) && hand.count_of(target_tile) >= 3
-          seat_options << { type: :pon, tiles: find_pon_tiles(hand, target_tile) } if hand.count_of(target_tile) >= 2
+          if hand.count_of(target_tile) >= 2
+            pon_tiles = find_pon_tiles(hand, target_tile)
+            seat_options << { type: :pon, tiles: pon_tiles } if discard_left?(hand, pon_tiles, target_tile, false, rule)
+          end
 
           if (dahai_seat + 1) % 4 == seat && target_tile.suuhai?
             find_chi_sets(hand, target_tile).each do |tiles|
-              seat_options << { type: :chi, tiles: tiles }
+              seat_options << { type: :chi, tiles: tiles } if discard_left?(hand, tiles, target_tile, true, rule)
             end
           end
 
@@ -47,6 +50,16 @@ module Mahjong
         end
 
         options
+      end
+
+      # 喰い替えを禁じるルール（kuikae が偽）では、鳴いた後に切れる牌が 1 枚も残らない鳴きは出さない。
+      def self.discard_left?(hand, tiles, target, chi, rule)
+        return true if rule.nil? || rule.kuikae?
+
+        rest = tiles.reduce(hand) { |h, t| h.remove(Tiles::Tile.new(t)) }
+        called = tiles.map { |t| Tiles::Tile.new(t) } + [target]
+        forbidden = Rounds::RoundFlow.kuikae_kinds(target, called, chi)
+        rest.tiles.any? { |t| forbidden.none? { |f| f.same_kind?(t) } }
       end
 
       def self.kan_available?(state)
