@@ -191,6 +191,7 @@ module Mahjong
       state.last_tsumo = nil
       clear_agari_flags(state)
       4.times { |s| state.first_turn_flags[s] = false }
+      reveal_pending_kan_dora(state)
 
       naki_options = Detectors::NakiDetector.detect(state: state, dahai_seat: seat, dahai_tile: tile, rule: rule)
       if naki_options.any?
@@ -215,7 +216,7 @@ module Mahjong
 
       if state.pending_actions.empty?
         if state.chankan_tile
-          finalize_kakan(state)
+          finalize_kakan(state, rule)
         else
           advance_turn(state)
         end
@@ -281,14 +282,14 @@ module Mahjong
       process_dahai(state, action.merge(riichi: true), rule)
     end
 
-    def self.process_ankan(state, action, _rule)
+    def self.process_ankan(state, action, rule)
       seat = action[:seat]
       tile = Tiles::Tile.new(action[:tile])
       removed = Array.new(4, tile.to_s)
 
       state.hands[seat] = state.hands[seat].remove_tiles(removed)
       state.fuuros[seat] << State::Fuuro.new(type: :ankan, tiles: removed.map { Tiles::Tile.new(_1) })
-      apply_kan_transition(state, seat, tile, open_kan: false)
+      apply_kan_transition(state, seat, tile, open_kan: false, rule: rule)
 
       [{ type: :ankan, seat: seat, tile: tile.to_s }]
     end
@@ -311,13 +312,13 @@ module Mahjong
         state.phase = :naki_wait
         state.pending_actions = pending_actions
       else
-        finalize_kakan(state)
+        finalize_kakan(state, rule)
       end
 
       [{ type: :kakan, seat: seat, tile: tile.to_s }]
     end
 
-    def self.process_daiminkan(state, action, _rule)
+    def self.process_daiminkan(state, action, rule)
       seat = action[:seat]
       tile = state.last_dahai[:tile]
       removed = Array.new(3, tile.to_s)
@@ -327,7 +328,7 @@ module Mahjong
       state.kawas[state.last_dahai[:seat]].mark_last_called!
       state.current_seat = seat
       state.menzen_flags[seat] = false
-      apply_kan_transition(state, seat, tile, open_kan: true, keep_turn: true)
+      apply_kan_transition(state, seat, tile, open_kan: true, keep_turn: true, rule: rule)
 
       [{ type: :daiminkan, seat: seat, tile: tile.to_s }]
     end
@@ -516,15 +517,21 @@ module Mahjong
       state.wanpai&.rinshan_remaining.to_i.positive? && state.wanpai&.dora_revealable?
     end
 
-    def self.apply_kan_transition(state, seat, tile, open_kan:, keep_turn: false)
+    # 新ドラは槓の直後にめくる。ルール minkan_dora_after_discard なら、明槓（大明槓・加槓）の
+    # 新ドラはその後の打牌のとき（ロンの判定の前）か、次の槓のときにめくる（嶺上開花ではめくらない）。
+    def self.apply_kan_transition(state, seat, tile, open_kan:, keep_turn: false, rule: nil)
       state.current_seat = seat if keep_turn
       state.phase = :dahai
       state.kan_count += 1
       state.kan_by_player[seat] += 1
       state.rinshan_flag = true
       state.chankan_tile = open_kan ? tile : nil
-      state.wanpai.reveal_new_dora!
-      state.dora_hyouji = state.wanpai.dora_hyouji.dup
+      reveal_pending_kan_dora(state)
+      if open_kan && rule&.minkan_dora_after_discard?
+        state.pending_kan_dora = state.pending_kan_dora.to_i + 1
+      else
+        reveal_kan_dora(state)
+      end
       rinshan_tile = state.wanpai.draw_rinshan!
       state.hands[seat] = state.hands[seat].add(rinshan_tile)
       state.last_tsumo = rinshan_tile
@@ -532,9 +539,21 @@ module Mahjong
     end
     private_class_method :apply_kan_transition
 
-    def self.finalize_kakan(state)
+    def self.reveal_kan_dora(state)
+      state.wanpai.reveal_new_dora!
+      state.dora_hyouji = state.wanpai.dora_hyouji.dup
+    end
+    private_class_method :reveal_kan_dora
+
+    def self.reveal_pending_kan_dora(state)
+      state.pending_kan_dora.to_i.times { reveal_kan_dora(state) }
+      state.pending_kan_dora = 0
+    end
+    private_class_method :reveal_pending_kan_dora
+
+    def self.finalize_kakan(state, rule = nil)
       tile = state.chankan_tile
-      apply_kan_transition(state, state.current_seat, tile, open_kan: true)
+      apply_kan_transition(state, state.current_seat, tile, open_kan: true, rule: rule)
       state.chankan_tile = nil
       state.pending_actions = {}
     end

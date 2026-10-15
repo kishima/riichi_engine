@@ -40,6 +40,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nishi_iri` | Boolean | `false` | 西入あり |
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
+| `minkan_dora_after_discard` | Boolean | `false` | 明槓（大明槓・加槓）の新ドラを、槓の直後ではなくその後の打牌のとき（ロンの判定の前）にめくる。打牌の前に次の槓をすればそのときにめくり、嶺上開花ではめくらない。暗槓は常に直後 |
 
 ### Snapshots
 
