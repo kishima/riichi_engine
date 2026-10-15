@@ -335,6 +335,37 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
     expect(flow_state.chankan_tile).to be_nil
   end
 
+  it "一発はリーチした本人の次の打牌でクリアされる" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "ippatsu-clear-seed")
+    4.times { |seat| flow_state.hands[seat] = Mahjong::State::Hand.new([]) }
+    flow_state.phase = :dahai
+    flow_state.current_seat = 0
+    flow_state.hands[0] = Mahjong::State::Hand.new(tiles("1m 2m 3m 4p 5p 6p 7s 8s 9s 9m 9m 2s 4s 1z"))
+    flow_state.last_tsumo = Mahjong::Tiles::Tile.new("1z")
+    flow_state.riichi_flags[0] = true
+    flow_state.ippatsu_flags[0] = true
+    flow_state.riichi_flags[2] = true
+    flow_state.ippatsu_flags[2] = true
+
+    described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "1z" }, rule:)
+
+    expect(flow_state.ippatsu_flags[0]).to be false
+    expect(flow_state.ippatsu_flags[2]).to be true
+  end
+
+  it "リーチ宣言の打牌では一発は残る" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "ippatsu-keep-seed")
+    4.times { |seat| flow_state.hands[seat] = Mahjong::State::Hand.new([]) }
+    flow_state.phase = :dahai
+    flow_state.current_seat = 0
+    flow_state.hands[0] = Mahjong::State::Hand.new(tiles("1m 2m 3m 4p 5p 6p 7s 8s 9s 9m 9m 2s 4s 1z"))
+    flow_state.last_tsumo = Mahjong::Tiles::Tile.new("1z")
+
+    described_class.apply_action(state: flow_state, action: { type: :riichi, seat: 0, tile: "1z" }, rule:)
+
+    expect(flow_state.ippatsu_flags[0]).to be true
+  end
+
   it "壁が尽きている場合の tsumo は荒牌平局になる" do
     flow_state = described_class.setup(game_snapshot:, rule:, seed: "draw-seed")
     flow_state.wall = Mahjong::Tiles::Wall.new([])
