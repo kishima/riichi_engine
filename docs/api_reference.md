@@ -40,6 +40,9 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nishi_iri` | Boolean | `false` | 西入あり |
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
+| `suufon_renda` | Boolean | `false` | 四風連打で途中流局（鳴きの無い第一巡で 4 人が同じ風牌を切った打牌が通ったとき） |
+| `suukaikan` | Boolean | `false` | 四槓散了で途中流局（2 人以上で槓が 4 つになった後の打牌が通ったとき。1 人の 4 槓では流局しない） |
+| `suucha_riichi` | Boolean | `false` | 四家立直で途中流局（4 人目のリーチの打牌が通ったとき。供託は場に残る） |
 
 ### Snapshots
 

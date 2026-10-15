@@ -17,7 +17,10 @@ module Mahjong
       "tobi" => true,
       "nishi_iri" => false,
       "nishi_iri_threshold" => 30000,
-      "renpuu_jantou_fu" => 2
+      "renpuu_jantou_fu" => 2,
+      "suufon_renda" => false,
+      "suukaikan" => false,
+      "suucha_riichi" => false
     }.freeze
 
     def initialize(config = {})
