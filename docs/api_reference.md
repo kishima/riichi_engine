@@ -44,6 +44,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `suufon_renda` | Boolean | `false` | 四風連打で途中流局（鳴きの無い第一巡で 4 人が同じ風牌を切った打牌が通ったとき） |
 | `suukaikan` | Boolean | `false` | 四槓散了で途中流局（2 人以上で槓が 4 つになった後の打牌が通ったとき。1 人の 4 槓では流局しない） |
 | `suucha_riichi` | Boolean | `false` | 四家立直で途中流局（4 人目のリーチの打牌が通ったとき。供託は場に残る） |
+| `nagashi_mangan` | Boolean | `false` | 流し満貫あり（荒牌流局の `round_end_info[:nagashi_seats]` に成立した席。支払いは `calculate_nagashi_mangan_payments`） |
 
 ### Snapshots
 
@@ -213,6 +214,21 @@ Mahjong::State::RoundState
 ```
 
 正の値が受け取り、負の値が支払いです。
+
+---
+
+### `calculate_nagashi_mangan_payments(nagashi_seats, oya_seat:)`
+
+流し満貫（ルール `nagashi_mangan`）の支払いを計算します。荒牌流局の `round_end_info[:nagashi_seats]` が空でなければ、
+ノーテン罰符（`calculate_tenpai_payments`）の代わりにこれを使います。
+
+成立した席はそれぞれ満貫のツモ和了と同じ額を受け取ります（親なら 4000 点オール、子なら親から 4000 点・子から 2000 点）。
+本場は付かず、供託は次局へ残ります。親の連荘は通常の流局と同じく親のテンパイで決まります（`tenpai_seats` を渡す）。
+
+```ruby
+RiichiEngine::API.calculate_nagashi_mangan_payments([2], oya_seat: 0)
+# => { 0 => -4000, 1 => -2000, 2 => 8000, 3 => -2000 }
+```
 
 ---
 

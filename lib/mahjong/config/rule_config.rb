@@ -21,7 +21,8 @@ module Mahjong
       "renpuu_jantou_fu" => 2,
       "suufon_renda" => false,
       "suukaikan" => false,
-      "suucha_riichi" => false
+      "suucha_riichi" => false,
+      "nagashi_mangan" => false
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）

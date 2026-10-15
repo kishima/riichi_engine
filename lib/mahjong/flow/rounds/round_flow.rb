@@ -155,12 +155,12 @@ module Mahjong
       end
     end
 
-    def self.process_tsumo(state, _action, _rule)
+    def self.process_tsumo(state, _action, rule)
       clear_agari_flags(state)
 
       if state.wall.remaining <= 0
         state.phase = :round_end
-        set_round_end_info(state, result_type: :ryuukyoku)
+        set_round_end_info(state, result_type: :ryuukyoku, **exhaustive_draw_extra(state, rule))
         return [{ type: :ryuukyoku }]
       end
 
@@ -206,7 +206,7 @@ module Mahjong
       elsif abortive
         end_abortive_draw(state, abortive)
       else
-        advance_turn(state)
+        advance_turn(state, rule)
       end
 
       [{ type: :dahai, seat: seat, tile: tile.to_s, tsumogiri: tsumogiri }]
@@ -228,7 +228,7 @@ module Mahjong
         elsif (abortive = abortive_draw(state, rule))
           end_abortive_draw(state, abortive)
         else
-          advance_turn(state)
+          advance_turn(state, rule)
         end
       end
       [{ type: :skip, seat: seat }]
@@ -419,11 +419,11 @@ module Mahjong
     end
     private_class_method :end_abortive_draw
 
-    def self.advance_turn(state)
+    def self.advance_turn(state, rule = nil)
       if state.wall.remaining <= 0
         state.phase = :round_end
         clear_agari_flags(state)
-        set_round_end_info(state, result_type: :ryuukyoku)
+        set_round_end_info(state, result_type: :ryuukyoku, **exhaustive_draw_extra(state, rule))
         return
       end
 
@@ -431,6 +431,22 @@ module Mahjong
       state.phase = :tsumo
       state.dojun_furiten_flags[state.current_seat] = false
       clear_agari_flags(state)
+    end
+
+    # 荒牌流局の round_end_info に足すもの。流し満貫（nagashi_mangan）が有効なら
+    # nagashi_seats: 成立した席（河が么九牌だけで、どれも鳴かれていない）。
+    def self.exhaustive_draw_extra(state, rule)
+      return {} unless rule&.nagashi_mangan?
+
+      { nagashi_seats: nagashi_mangan_seats(state) }
+    end
+    private_class_method :exhaustive_draw_extra
+
+    def self.nagashi_mangan_seats(state)
+      4.times.select do |seat|
+        kawa = state.kawas[seat]
+        kawa && kawa.count.positive? && kawa.tiles.all? { |kt| kt.tile.yaochu? && !kt.called }
+      end
     end
 
     def self.can_tsumo_agari?(state, seat, rule)
