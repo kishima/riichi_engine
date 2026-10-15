@@ -24,7 +24,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 
 | キー | 型 | デフォルト | 説明 |
 |---|---|---|---|
-| `game_type` | String | `"hanchan"` | `"hanchan"`（東南戦）または `"tonpuu"`（東風戦） |
+| `game_type` | String | `"hanchan"` | `"hanchan"`（東南戦）または `"tonpuu"`（東風戦。`"tonpuusen"` も同じ） |
 | `initial_score` | Integer | `25000` | 開始点数 |
 | `oka_origin` | Integer | `30000` | オカの基準点 |
 | `uma` | Array | `[20000, 10000, -10000, -20000]` | ウマ（1位から順） |
