@@ -18,6 +18,18 @@ RSpec.describe Mahjong::Tiles::Wall do
       wall2 = described_class.build(seed: "xyz")
       expect(wall1.to_a).not_to eq(wall2.to_a)
     end
+
+    it "英数字以外を含む seed も全体で区別する" do
+      wall1 = described_class.build(seed: "round-001")
+      wall2 = described_class.build(seed: "round-002")
+      expect(wall1.to_a).not_to eq(wall2.to_a)
+      expect(described_class.build(seed: "round-001").to_a).to eq(wall1.to_a)
+    end
+
+    it "英数字だけの seed は従来と同じ順序になる" do
+      expected = Mahjong::Tiles::Tile.all_tiles.shuffle(random: Random.new("abc123".to_i(36))).map(&:to_s)
+      expect(described_class.build(seed: "abc123").to_a).to eq(expected)
+    end
   end
 
   describe "#draw!" do

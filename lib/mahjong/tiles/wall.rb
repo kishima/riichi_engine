@@ -1,3 +1,5 @@
+require "digest"
+
 module Mahjong
   module Tiles
     class Wall
@@ -39,9 +41,19 @@ module Mahjong
 
       def self.build(aka_config: { "m" => 1, "p" => 1, "s" => 1 }, seed: nil)
         all = Tile.all_tiles(aka_config)
-        rng = seed ? Random.new(seed.to_i(36)) : Random.new
+        rng = seed ? Random.new(seed_number(seed)) : Random.new
         new(all.shuffle(random: rng))
       end
+
+      # 英数字だけの seed は従来どおり 36 進数として読む。それ以外の文字を含む seed は
+      # to_i(36) がそこで止まってしまうため、文字列全体のハッシュを使う。
+      def self.seed_number(seed)
+        str = seed.to_s
+        return str.to_i(36) if str.match?(/\A[0-9a-z]+\z/i)
+
+        Digest::SHA256.hexdigest(str).to_i(16)
+      end
+      private_class_method :seed_number
     end
   end
 end
