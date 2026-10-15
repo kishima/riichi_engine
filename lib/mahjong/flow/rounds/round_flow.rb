@@ -281,14 +281,25 @@ module Mahjong
       process_dahai(state, action.merge(riichi: true), rule)
     end
 
-    def self.process_ankan(state, action, _rule)
+    def self.process_ankan(state, action, rule)
       seat = action[:seat]
       tile = Tiles::Tile.new(action[:tile])
       removed = Array.new(4, tile.to_s)
 
       state.hands[seat] = state.hands[seat].remove_tiles(removed)
       state.fuuros[seat] << State::Fuuro.new(type: :ankan, tiles: removed.map { Tiles::Tile.new(_1) })
-      apply_kan_transition(state, seat, tile, open_kan: false)
+
+      # 国士無双の暗槓の搶槓（ルール kokushi_ankan_chankan）: 加槓と同じく、ロンを待ってから槓を終える
+      pending_actions = rule&.kokushi_ankan_chankan? ? detect_kokushi_chankan_actions(state, seat, tile, rule) : {}
+      if pending_actions.any?
+        state.current_seat = seat
+        state.chankan_tile = tile
+        state.last_dahai = { seat: seat, tile: tile }
+        state.phase = :naki_wait
+        state.pending_actions = pending_actions
+      else
+        apply_kan_transition(state, seat, tile, open_kan: false)
+      end
 
       [{ type: :ankan, seat: seat, tile: tile.to_s }]
     end
@@ -534,7 +545,9 @@ module Mahjong
 
     def self.finalize_kakan(state)
       tile = state.chankan_tile
-      apply_kan_transition(state, state.current_seat, tile, open_kan: true)
+      # 搶槓を待った暗槓（kokushi_ankan_chankan）は暗槓として終える
+      closed = state.fuuros[state.current_seat].last&.ankan?
+      apply_kan_transition(state, state.current_seat, tile, open_kan: !closed)
       state.chankan_tile = nil
       state.pending_actions = {}
     end
@@ -555,6 +568,26 @@ module Mahjong
       options
     end
     private_class_method :detect_chankan_actions
+
+    # 暗槓の牌で国士無双を和了れる席（フリテンでない）。
+    def self.detect_kokushi_chankan_actions(state, kan_seat, tile, rule)
+      options = {}
+
+      4.times do |seat|
+        next if seat == kan_seat
+
+        tiles_34 = state.hands[seat].to_34
+        tiles_34[Tiles::TileSet.tile_index(tile)] += 1
+        next unless Scoring::Judges::AgariJudge.kokushi?(tiles_34)
+        next unless can_ron_agari?(state, seat, tile, rule)
+
+        furiten = Scoring::Judges::FuritenJudge.judge(state: state, seat: seat)
+        options[seat] = [{ type: :ron_agari }] unless furiten.furiten?
+      end
+
+      options
+    end
+    private_class_method :detect_kokushi_chankan_actions
 
     def self.clear_agari_flags(state)
       state.rinshan_flag = false
