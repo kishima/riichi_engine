@@ -189,6 +189,7 @@ module Mahjong
       state.kawas[seat].add(tile, tsumogiri: tsumogiri, riichi: action[:riichi] || false)
       state.last_dahai = { seat: seat, tile: tile }
       state.last_tsumo = nil
+      state.ippatsu_flags[seat] = false if state.riichi_flags[seat] && !action[:riichi]
       clear_agari_flags(state)
       4.times { |s| state.first_turn_flags[s] = false }
 
