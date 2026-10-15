@@ -82,6 +82,29 @@ RSpec.describe Mahjong::Flow::Games::GameFlow do
       expect(result.reason).to eq(:normal_end)
     end
 
+    it "README の game_type \"tonpuu\" でも東4局終了でゲーム終了" do
+      snapshot = build_progress_snapshot(bakaze: "ton", kyoku: 4)
+      info = Mahjong::Results::RoundEndInfo.new(result_type: :ron, winners: [{ seat: 1 }], tenpai_seats: [])
+      tonpuu_rule = Mahjong::Config::RuleConfig.new("game_type" => "tonpuu")
+
+      result = described_class.judge_next(progress_snapshot: snapshot, round_end_info: info, rule: tonpuu_rule)
+
+      expect(result).to be_game_end
+      expect(result.reason).to eq(:normal_end)
+    end
+
+    it "東風戦（\"tonpuu\"）の東4局で親がトップで和了ればゲーム終了" do
+      snapshot = build_progress_snapshot(bakaze: "ton", kyoku: 4, oya_index: 3,
+                                         scores: [20_000, 20_000, 20_000, 40_000])
+      info = Mahjong::Results::RoundEndInfo.new(result_type: :ron, winners: [{ seat: 3 }], tenpai_seats: [])
+      tonpuu_rule = Mahjong::Config::RuleConfig.new("game_type" => "tonpuu")
+
+      result = described_class.judge_next(progress_snapshot: snapshot, round_end_info: info, rule: tonpuu_rule)
+
+      expect(result).to be_game_end
+      expect(result.reason).to eq(:all_last_oya_agari)
+    end
+
     it "東4局の子和了で半荘は南1局へ進む" do
       snapshot = build_progress_snapshot(bakaze: "ton", kyoku: 4)
       info = Mahjong::Results::RoundEndInfo.new(result_type: :ron, winners: [{ seat: 1 }], tenpai_seats: [])

@@ -133,7 +133,7 @@ module Mahjong
 
     def self.should_end_game?(next_bakaze, scores, rule)
       case rule.game_type
-      when "tonpuusen"
+      when "tonpuu", "tonpuusen"
         next_bakaze == "nan"
       when "hanchan"
         if next_bakaze == "sha"
@@ -149,7 +149,7 @@ module Mahjong
 
     def self.all_last_oya_agari?(progress_snapshot, round_end_info, scores, rule)
       is_all_last = (progress_snapshot.bakaze == "nan" && progress_snapshot.kyoku == 4 && rule.game_type == "hanchan") ||
-                    (progress_snapshot.bakaze == "ton" && progress_snapshot.kyoku == 4 && rule.game_type == "tonpuusen")
+                    (progress_snapshot.bakaze == "ton" && progress_snapshot.kyoku == 4 && %w[tonpuu tonpuusen].include?(rule.game_type))
       return false unless is_all_last
       return false unless round_end_info.winners.any? { |winner| winner[:seat] == progress_snapshot.oya_index }
 
