@@ -6,6 +6,14 @@ RSpec.describe "Mahjong::Yaku pattern yaku" do
       ctx = yaku_context_for("1m 2m 3m 1m 2m 3m 4p 5p 6p 7s 8s 9s 2z 2z", agari_type: :ron)
       expect(described_class.check(ctx)&.name).to eq("iipeiko")
     end
+
+    it "同じ順子 3 つは一盃口と判定する" do
+      hand = "1m 2m 3m 1m 2m 3m 1m 2m 3m 7s 8s 9s 2z 2z"
+      form = agari_forms(hand).find { |f| f.parsed_hand.mentsu_notations.all? { |m| m[:type] == :shuntsu } }
+      ctx = yaku_context_for(hand, form:, agari_type: :ron)
+
+      expect(described_class.check(ctx)&.name).to eq("iipeiko")
+    end
   end
 
   describe Mahjong::Scoring::Yaku::SanshokuDoujun do
@@ -96,6 +104,15 @@ RSpec.describe "Mahjong::Yaku pattern yaku" do
     it "二盃口を判定する" do
       ctx = yaku_context_for("1m 2m 3m 1m 2m 3m 4m 5m 6m 4m 5m 6m 1p 1p", agari_type: :ron, machi_type: :tanki)
       expect(described_class.check(ctx)&.name).to eq("ryanpeiko")
+    end
+
+    it "同じ順子 4 つも二盃口と判定する" do
+      hand = "6p 7p 8p 6p 7p 8p 6p 7p 8p 6p 7p 8p 2s 2s"
+      form = agari_forms(hand).find { |f| f.parsed_hand.mentsu_notations.all? { |m| m[:type] == :shuntsu } }
+      ctx = yaku_context_for(hand, form:, agari_type: :ron, machi_type: :ryanmen)
+
+      expect(described_class.check(ctx)&.name).to eq("ryanpeiko")
+      expect(Mahjong::Scoring::Yaku::Iipeiko.check(ctx)).to be_nil
     end
   end
 end
