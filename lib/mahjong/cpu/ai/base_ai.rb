@@ -25,6 +25,11 @@ module Mahjong
         agari = available.find { |action| action[:type] == :tsumo_agari }
         return agari if agari
 
+        if state.riichi_flags[seat]
+          dahai = available.find { |action| action[:type] == :dahai }
+          return dahai if dahai
+        end
+
         riichi = available.find { |action| action[:type] == :riichi }
         if riichi && Judges::RiichiJudge.should_riichi?(state: state, seat: seat, level: level)
           tile = riichi[:choices]&.first || state.last_tsumo.to_s

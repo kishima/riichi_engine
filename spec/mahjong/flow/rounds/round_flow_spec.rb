@@ -126,7 +126,7 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
     expect(flow_state.kawas[0].to_a.last[:riichi]).to be true
   end
 
-  it "リーチ後の available_actions は自摸和了以外のボタンを返さない" do
+  it "リーチ後の available_actions は自摸切りと自摸和了以外を返さない" do
     flow_state = described_class.setup(game_snapshot:, rule:, seed: "riichi-limit-seed")
     flow_state.phase = :dahai
     flow_state.current_seat = 0
@@ -136,7 +136,27 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
 
     actions = described_class.available_actions(state: flow_state, seat: 0, rule:)
 
-    expect(actions).to eq([])
+    expect(actions).to eq([{ type: :dahai, tile: "3m" }])
+  end
+
+  it "リーチ後は自摸切りで手番が進み、ほかの牌は切れない" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "riichi-tsumogiri-seed")
+    4.times { |seat| flow_state.hands[seat] = Mahjong::State::Hand.new([]) }
+    flow_state.phase = :dahai
+    flow_state.current_seat = 0
+    flow_state.riichi_flags[0] = true
+    flow_state.hands[0] = Mahjong::State::Hand.new(tiles("1m 2m 3m 4p 5p 6p 7s 8s 9s 9m 9m 2s 4s 1z"))
+    flow_state.last_tsumo = Mahjong::Tiles::Tile.new("1z")
+
+    expect do
+      described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "9m" }, rule:)
+    end.to raise_error(Mahjong::Errors::InvalidActionError, /drawn tile/)
+
+    described_class.apply_action(state: flow_state, action: { type: :dahai, seat: 0, tile: "1z" }, rule:)
+
+    expect(flow_state.kawas[0].to_a.last[:tile]).to eq("1z")
+    expect(flow_state.phase).to eq(:tsumo)
+    expect(flow_state.current_seat).to eq(1)
   end
 
   it "リーチ中のロン待ちではロン以外を返さない" do

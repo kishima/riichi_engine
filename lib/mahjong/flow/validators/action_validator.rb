@@ -25,6 +25,7 @@ module Mahjong
           return invalid("seat mismatch") unless action[:seat] == state.current_seat
           return invalid("tile is required") if missing_value?(action[:tile])
           return invalid("tile not in hand") unless state.hands[state.current_seat].include?(action[:tile])
+          return invalid("riichi player must discard the drawn tile") if riichi_tsumogiri_violation?(state, action)
           valid
         when :skip
           return invalid("phase must be naki_wait") unless state.phase == :naki_wait
@@ -99,6 +100,13 @@ module Mahjong
 
         resolved[:seat] == action[:seat] && resolved[:type].to_sym == action[:type].to_sym
       end
+
+      def self.riichi_tsumogiri_violation?(state, action)
+        return false unless state.riichi_flags[state.current_seat] && state.last_tsumo
+
+        action[:tile].to_s != state.last_tsumo.to_s
+      end
+      private_class_method :riichi_tsumogiri_violation?
 
       def self.missing_value?(value)
         value.nil? || (value.respond_to?(:empty?) && value.empty?)
