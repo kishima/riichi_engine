@@ -101,7 +101,7 @@ module Mahjong
         return [] unless state.current_seat == seat
 
         actions = if state.riichi_flags[seat]
-                    []
+                    state.last_tsumo ? [{ type: :dahai, tile: state.last_tsumo.to_s }] : []
                   else
                     state.hands[seat].tiles.uniq(&:to_s).map { |tile| { type: :dahai, tile: tile.to_s } }
                   end

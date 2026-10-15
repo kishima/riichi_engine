@@ -47,6 +47,13 @@ RSpec.describe Mahjong::Cpu::Ai::BaseAi do
     expect(ai.think(state:, seat: 0, available:, rule:)).to eq(type: :dahai, tile: "7z")
   end
 
+  it "リーチ中は自摸切りする" do
+    state.riichi_flags[0] = true
+    available = [{ type: :dahai, tile: "7z" }]
+
+    expect(ai.think(state:, seat: 0, available:, rule:)).to eq(type: :dahai, tile: "7z")
+  end
+
   it "鳴き待ちでは鳴き判断を使い、なければ skip する" do
     state.phase = :naki_wait
     allow(Mahjong::Cpu::Judges::NakiJudge).to receive(:judge).and_return(nil)
