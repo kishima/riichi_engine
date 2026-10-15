@@ -53,4 +53,12 @@ RSpec.describe Mahjong::Cpu::Ai::BaseAi do
 
     expect(ai.think(state:, seat: 0, available: [{ type: :pon, tiles: %w[5m 5m] }], rule:)).to eq(type: :skip)
   end
+
+  it "打牌の前の手でテンパイならリーチする（判断を差し替えない）" do
+    easy = described_class.new(level: 1)
+    state.scores[0] = 25_000
+    available = [{ type: :riichi, choices: %w[6z 7z] }, { type: :dahai, tile: "7z" }]
+
+    expect(easy.think(state:, seat: 0, available:, rule:)).to eq(type: :riichi, tile: "6z").or eq(type: :riichi, tile: "7z")
+  end
 end
