@@ -16,6 +16,17 @@ RSpec.describe Mahjong::Config::RuleConfig do
       expect(config.initial_score).to eq(30000)
       expect(config.atozuke).to be true
     end
+
+    it "game_type は hanchan・tonpuu・tonpuusen を受ける" do
+      %w[hanchan tonpuu tonpuusen].each do |type|
+        expect(described_class.new("game_type" => type).game_type).to eq(type)
+      end
+    end
+
+    it "知らない game_type は EngineError（局の後にゲームが終わらなくなるため）" do
+      expect { described_class.new("game_type" => "tonnan") }.to raise_error(RiichiEngine::API::EngineError, /unknown game_type/)
+      expect { described_class.new(game_type: nil) }.to raise_error(RiichiEngine::API::EngineError)
+    end
   end
 
   describe "#aka_dora_config" do

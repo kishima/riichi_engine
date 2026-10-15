@@ -127,6 +127,16 @@ RSpec.describe Mahjong::Flow::Games::GameFlow do
       expect(result.reason).to eq(:normal_end)
     end
 
+    it "知らない game_type の rule では次局に進めず EngineError（ゲームが終わらないまま続くのを防ぐ）" do
+      snapshot = build_progress_snapshot(bakaze: "ton", kyoku: 4)
+      info = Mahjong::Results::RoundEndInfo.new(result_type: :ron, winners: [{ seat: 1 }], tenpai_seats: [])
+      odd_rule = Mahjong::Config::RuleConfig.new
+      odd_rule.instance_variable_get(:@config)["game_type"] = "tonnan"
+
+      expect { described_class.judge_next(progress_snapshot: snapshot, round_end_info: info, rule: odd_rule) }
+        .to raise_error(RiichiEngine::API::EngineError, /unknown game_type/)
+    end
+
     it "東風戦（\"tonpuu\"）の東4局で親がトップで和了ればゲーム終了" do
       snapshot = build_progress_snapshot(bakaze: "ton", kyoku: 4, oya_index: 3,
                                          scores: [20_000, 20_000, 20_000, 40_000])

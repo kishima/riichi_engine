@@ -21,11 +21,15 @@ module Mahjong
       "renpuu_jantou_fu" => 2
     }.freeze
 
+    # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）
+    GAME_TYPES = %w[hanchan tonpuu tonpuusen].freeze
+
     def initialize(config = {})
       normalized = (config || {}).each_with_object({}) do |(key, value), hash|
         hash[key.to_s] = value
       end
       @config = DEFAULTS.merge(normalized)
+      validate_game_type!
     end
 
     # 動的メソッドアクセス
@@ -48,6 +52,16 @@ module Mahjong
 
     def to_json(*args)
       JSON.generate(@config, *args)
+    end
+
+    private
+
+    # 知らない game_type では局の後にゲームが終わらない（終局の判定に当てはまらない）ので、
+    # 作るときに弾く。
+    def validate_game_type!
+      return if GAME_TYPES.include?(@config["game_type"])
+
+      raise Errors::EngineError, "unknown game_type: #{@config['game_type'].inspect} (#{GAME_TYPES.join(', ')})"
     end
     end
   end

@@ -143,7 +143,7 @@ module Mahjong
         end
         false
       else
-        false
+        raise Errors::EngineError, "unknown game_type: #{rule.game_type.inspect}"
       end
     end
 
