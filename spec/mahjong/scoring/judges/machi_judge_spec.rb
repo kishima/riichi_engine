@@ -94,5 +94,12 @@ RSpec.describe Mahjong::Scoring::Judges::MachiJudge do
       ryanmen_results = results.select { |r| r.machi_type == :ryanmen }
       expect(ryanmen_results).not_to be_empty
     end
+
+    it "同じ和了形で和了牌が雀頭にも順子にも入るときは両方の待ちを返す" do
+      # 123p 456p 789s 345m 5m: 5m は単騎（雀頭 55m）でも 34m の両面でもある
+      tiles = t34("1p","2p","3p","4p","5p","6p","7s","8s","9s","3m","4m","5m","5m")
+      results = described_class.find_machi(tiles).select { |r| r.tile_index == tile_idx("5m") }
+      expect(results.map(&:machi_type)).to include(:tanki, :ryanmen)
+    end
   end
 end
