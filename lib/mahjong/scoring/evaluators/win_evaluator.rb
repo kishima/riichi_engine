@@ -3,6 +3,35 @@ module Mahjong
     module Evaluators
       class WinEvaluator
         def self.evaluate(state:, seat:, agari_type:, agari_tile:, rule:, extra_flags:, snapshot:)
+          choices = tenhou_agari_tiles(state, seat, agari_type, agari_tile, rule, snapshot)
+          unless choices
+            return evaluate_with(state:, seat:, agari_type:, agari_tile:, rule:, extra_flags:, snapshot:)
+          end
+
+          results = choices.filter_map do |tile|
+            evaluate_with(state:, seat:, agari_type:, agari_tile: tile, rule:, extra_flags:, snapshot:)
+          rescue Errors::EngineError
+            nil
+          end
+          raise Errors::EngineError, "No valid winning result found" if results.empty?
+
+          # 同じ点なら自摸った牌（choices の先頭）
+          results.each_with_index.max_by { |(winner, score), index| [score.total, winner[:han].to_i, -index] }.first
+        end
+
+        # 天和（親の第一巡の自摸、鳴きなし）で、ルール tenhou_best_tile が真なら、和了牌と見る牌の候補
+        # （自摸った牌を先頭に、手の牌の種類ごとに 1 枚）。それ以外は nil。
+        def self.tenhou_agari_tiles(state, seat, agari_type, agari_tile, rule, snapshot)
+          return nil unless rule&.respond_to?(:tenhou_best_tile?) && rule.tenhou_best_tile?
+          return nil unless agari_type == :tsumo && state.first_turn_flags[seat] && snapshot.jikaze == "ton"
+          return nil unless Array(state.fuuros[seat]).empty?
+
+          others = state.hands[seat].tiles.reject { |t| t.same_kind?(agari_tile) }.uniq(&:to_s)
+          [agari_tile] + others.uniq { |t| Tiles::TileSet.tile_index(t) }
+        end
+        private_class_method :tenhou_agari_tiles
+
+        def self.evaluate_with(state:, seat:, agari_type:, agari_tile:, rule:, extra_flags:, snapshot:)
           full_hand_tiles = winning_hand_tiles(state, seat, agari_type, agari_tile)
           concealed_hand_tiles = remove_agari_tile(full_hand_tiles, agari_tile)
           forms = Scoring::Judges::AgariJudge.all_forms(Tiles::TileSet.to_34(full_hand_tiles))
@@ -77,6 +106,7 @@ module Mahjong
 
           [winner_info, score_result]
         end
+        private_class_method :evaluate_with
 
         # 役満の数（基本点 8000 の何倍か）。役満の項目の han が -1 なら 1 つ、-2（ダブル役満、
         # double_yakuman のときだけ付く）なら 2 つ。複合役満（multiple_yakuman）なら全部を足し、

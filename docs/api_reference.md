@@ -41,6 +41,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nishi_iri` | Boolean | `false` | 西入あり |
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
+| `tenhou_best_tile` | Boolean | `false` | 天和では、手のどの牌を和了牌と見ても最も高い点になる牌を和了牌とする（偽なら自摸った牌） |
 
 ### Snapshots
 
