@@ -412,7 +412,7 @@ module Mahjong
           is_ippatsu: state.ippatsu_flags[seat],
           is_first_turn: state.first_turn_flags[seat],
           is_haitei: state.is_haitei?,
-          is_houtei: state.is_houtei?,
+          is_houtei: houtei?(state, agari_type, extra_flags),
           is_rinshan: extra_flags[:rinshan] == true,
           is_chankan: extra_flags[:chankan] == true,
           dora_tiles: state.wanpai ? state.wanpai.dora_tiles : [],
@@ -425,6 +425,13 @@ module Mahjong
         result.yakuman? || result.total_han.to_i.positive?
       end
     end
+
+    # 河底撈魚は最後の打牌へのロン。判定は局の phase ではなく牌山と和了の種類で行う
+    # （ロン候補の検出は打牌の処理中、和了の評価は round_end の後に行われるため）。
+    def self.houtei?(state, agari_type, extra_flags)
+      agari_type == :ron && state.is_haitei? == true && extra_flags[:chankan] != true
+    end
+    private_class_method :houtei?
 
     def self.remove_one_tile(tiles, agari_tile)
       removed = false

@@ -27,7 +27,7 @@ module Mahjong
               is_ippatsu: state.ippatsu_flags[seat],
               is_first_turn: state.first_turn_flags[seat],
               is_haitei: state.is_haitei?,
-              is_houtei: state.is_houtei?,
+              is_houtei: houtei?(state, agari_type, extra_flags),
               is_rinshan: extra_flags[:rinshan] == true,
               is_chankan: extra_flags[:chankan] == true,
               dora_tiles: state.dora_hyouji,
@@ -84,6 +84,12 @@ module Mahjong
           tiles + [agari_tile]
         end
         private_class_method :winning_hand_tiles
+
+        # 河底撈魚は最後の打牌へのロン（評価は round_end の後に呼ばれるので phase は見ない）。
+        def self.houtei?(state, agari_type, extra_flags)
+          agari_type == :ron && state.is_haitei? == true && extra_flags[:chankan] != true
+        end
+        private_class_method :houtei?
 
         def self.remove_agari_tile(full_hand_tiles, agari_tile)
           removed = false
