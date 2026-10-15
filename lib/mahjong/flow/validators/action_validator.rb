@@ -97,7 +97,7 @@ module Mahjong
       # 宣言した席のほかの選択肢（ロンもできる席のポンなど）とは比べない。
       def self.highest_priority_action?(state, action)
         pending = state.pending_actions.merge(action[:seat] => [{ type: action[:type].to_sym }])
-        resolved = Resolvers::ActionResolver.resolve(pending)
+        resolved = Resolvers::ActionResolver.resolve(pending, from_seat: state.last_dahai&.dig(:seat))
         return false unless resolved
 
         resolved[:seat] == action[:seat] && resolved[:type].to_sym == action[:type].to_sym

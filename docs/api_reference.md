@@ -145,7 +145,7 @@ Mahjong::State::RoundState
 
 ---
 
-### `resolve_pending_action(pending_actions)`
+### `resolve_pending_action(pending_actions, from_seat: nil)`
 
 複数の seat が同時に鳴き・ロンを宣言した場合（鳴き競合）に、優先順位を解決して1つのアクションを選びます。
 
@@ -154,6 +154,7 @@ Mahjong::State::RoundState
 | 引数 | 型 | 説明 |
 |---|---|---|
 | `pending_actions` | `Hash{Integer => Array<Hash>}` | seat番号 → アクション配列 のマップ |
+| `from_seat` | `Integer \| nil` | 打牌（加槓）した seat。渡すと同じ優先度どうしはその下家から順に優先する（頭はね）。省略時は seat 番号の若い順 |
 
 **返り値：** `Hash | nil`  
 競合を解決したアクション。有効なアクションがない場合は `nil`。
