@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.1.fmrb1（Fork の fmrb ブランチ、未公開）
+
+0.1.0 に、上流へ個別に出せる形の修正（`fix/*` ブランチ、1 ブランチ 1 件）をまとめたもの。
+
+### 修正
+
+- **ドラ** — `evaluate_win` がドラ表示牌そのものをドラとして数えていた（裏ドラも同じ）（`fix/dora-indicators`）
+- **河底撈魚** — 最後の打牌へのロンに河底撈魚が付かず、河底撈魚だけの手にロンが出なかった（`fix/houtei`）
+- **リーチ中の打牌** — リーチした席に `available_round_actions` が打牌を出さず、手番が進まなかった。自摸切りだけを出し、ほかの打牌は弾く（`fix/riichi-discard`）
+- **一発** — リーチした本人の次の打牌で一発が消えなかった（`fix/ippatsu`）
+- **赤五** — 打牌・チー・ポン・槓で赤五が別の五とすり替わる、または局から消えた（`fix/red-five`）
+- **鳴きの選択** — ロン（や大明槓）もできる席がポンを選べなかった（`fix/call-own-options`）
+- **頭はね** — 同じ優先度の宣言を席番号順で決めていた。打牌者の下家から順に決める（`resolve_pending_action` に任意の `from_seat:`）（`fix/ron-turn-order`）
+- **牌山の seed** — 英数字以外を含む seed がその文字の手前までしか使われず、`"round-001"` と `"round-002"` が同じ山になった（`fix/wall-seed`）
+- **CPU の打牌** — normal（と hard の多くの場面）が受け入れのいちばん少ない形を残していた（`fix/cpu-discard-ukeire`）
+- **東風戦** — 文書の `game_type` `"tonpuu"` でゲームが終わらなかった（`fix/tonpuu-game-type`）
+- **Zeitwerk** — `RiichiEngine.loader.eager_load` が失敗した（`fix/zeitwerk-eager-load`）
+- **断么九** — 赤五を含む手に断么九が付かなかった（`fix/tanyao-red-five`）
+- **双碰のロンの符** — ロンで完成した刻子を暗刻の符で数えていた（`fix/shanpon-ron-fu`）
+- **待ちの取り方** — 和了牌が複数の待ちに取れるとき（単騎と両面など）最初の 1 つしか見ず、平和や高い符を逃した（`fix/machi-interpretation`）
+- **二盃口** — 同じ順子 4 つが一盃口になっていた（`fix/ryanpeiko-four-sequences`）
+
+### 試験
+
+- `spec/compat/`: Python の `mahjong`（PyPI）と、和了の形（乱数と役ごとの代表）で役・翻・符・点数を突き合わせる。Python とそのパッケージが無ければ飛ばす。
+
 ## 0.1.0 (2026-04-05)
 
 初回リリース
