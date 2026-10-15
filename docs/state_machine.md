@@ -151,7 +151,7 @@ end
 | 優先度 | アクション | 備考 |
 |---|---|---|
 | 1（最高） | `:ron_agari` | ロンは最優先。ダブロン（2人同時ロン）はルール設定で許可する場合を除き、優先度の低い方はキャンセル |
-| 2 | `:daiminkan` / `:pon` | 同優先度の場合、座席番号が小さい方が優先 |
+| 2 | `:daiminkan` / `:pon` | 同優先度の場合、打牌者の下家から順に優先（頭はね） |
 | 3（最低） | `:chi` | 上家からしか鳴けないため実質競合しない |
 
 この解決は `RiichiEngine::API.resolve_pending_action` が行います。
@@ -160,7 +160,7 @@ end
 # 複数プレイヤーが宣言した場合の競合解決
 # state.pending_actions => { 1 => [{ type: :pon }], 2 => [{ type: :ron_agari }] }
 
-resolved = RiichiEngine::API.resolve_pending_action(state.pending_actions)
+resolved = RiichiEngine::API.resolve_pending_action(state.pending_actions, from_seat: state.last_dahai[:seat])
 # => { type: :ron_agari, seat: 2 }  # ロンが優先
 
 RiichiEngine::API.apply_round_action(state: state, action: resolved, rule: rule)

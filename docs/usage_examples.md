@@ -95,7 +95,7 @@ result = RiichiEngine::API.apply_round_action(
 `resolve_pending_action` で優先アクションを決定してから適用します。
 
 ```ruby
-resolved = RiichiEngine::API.resolve_pending_action(state.pending_actions)
+resolved = RiichiEngine::API.resolve_pending_action(state.pending_actions, from_seat: state.last_dahai[:seat])
 
 if resolved
   RiichiEngine::API.apply_round_action(

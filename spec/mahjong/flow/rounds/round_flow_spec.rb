@@ -304,6 +304,26 @@ RSpec.describe Mahjong::Flow::Rounds::RoundFlow do
     expect(flow_state.phase).to eq(:dahai)
   end
 
+  it "2 人がロンできるときは打牌者の下家に近い方が和了る（頭はね）" do
+    flow_state = described_class.setup(game_snapshot:, rule:, seed: "atamahane-seed")
+    flow_state.phase = :naki_wait
+    flow_state.current_seat = 2
+    flow_state.last_dahai = { seat: 2, tile: Mahjong::Tiles::Tile.new("8s") }
+    flow_state.hands[0] = Mahjong::State::Hand.new(tiles("2m 3m 4m 5p 6p 7p 3s 4s 5s 6s 7s 2p 2p"))
+    flow_state.hands[3] = Mahjong::State::Hand.new(tiles("2m 3m 4m 5p 6p 7p 3s 4s 5s 6s 7s 3p 3p"))
+    flow_state.pending_actions = { 0 => [{ type: :ron_agari }], 3 => [{ type: :ron_agari }] }
+
+    expect do
+      described_class.apply_action(state: flow_state, action: { type: :ron_agari, seat: 0 }, rule:)
+    end.to raise_error(Mahjong::Errors::InvalidActionError, "higher priority action exists")
+
+    resolved = RiichiEngine::API.resolve_pending_action(flow_state.pending_actions, from_seat: 2)
+    result = described_class.apply_action(state: flow_state, action: resolved, rule:)
+
+    expect(result.round_end_info[:winner_seat]).to eq(3)
+    expect(result.round_end_info[:loser_seat]).to eq(2)
+  end
+
   it "役なしロン見送りでは同巡フリテンを付けない" do
     flow_state = described_class.setup(game_snapshot:, rule:, seed: "skip-no-yaku-seed")
     flow_state.phase = :naki_wait

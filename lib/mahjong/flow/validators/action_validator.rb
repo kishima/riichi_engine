@@ -94,7 +94,7 @@ module Mahjong
       end
 
       def self.highest_priority_action?(state, action)
-        resolved = Resolvers::ActionResolver.resolve(state.pending_actions)
+        resolved = Resolvers::ActionResolver.resolve(state.pending_actions, from_seat: state.last_dahai&.dig(:seat))
         return false unless resolved
 
         resolved[:seat] == action[:seat] && resolved[:type].to_sym == action[:type].to_sym
