@@ -31,9 +31,10 @@ module Mahjong
         end
 
         riichi = available.find { |action| action[:type] == :riichi }
-        if riichi && Judges::RiichiJudge.should_riichi?(state: state, seat: seat, level: level)
-          tile = riichi[:choices]&.first || state.last_tsumo.to_s
-          return { type: :riichi, tile: tile }
+        if riichi
+          tile = Judges::RiichiJudge.riichi_tile(state: state, seat: seat, choices: riichi[:choices]) ||
+                 riichi[:choices]&.first || state.last_tsumo.to_s
+          return { type: :riichi, tile: tile } if Judges::RiichiJudge.should_riichi?(state: state, seat: seat, level: level, tile: tile)
         end
 
         ankan = available.find { |action| action[:type] == :ankan }
