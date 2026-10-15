@@ -97,6 +97,20 @@ RSpec.describe "包（pao）" do
       expect(delta).to eq(0 => -16_000, 2 => -16_300, 1 => 32_300)
     end
 
+    it "pao_honba が liable なら、ほかの席からのロンの積み棒は包の席" do
+      rule = Mahjong::Config::RuleConfig.new("pao" => %w[daisangen], "pao_honba" => "liable")
+      _winner, delta = changes(daisangen_state(true), rule, :ron, loser: 2, honba: 1)
+
+      expect(delta).to eq(0 => -16_300, 2 => -16_000, 1 => 32_300)
+    end
+
+    it "pao_honba が liable でも、包のない和了の積み棒は放銃者" do
+      rule = Mahjong::Config::RuleConfig.new("pao" => %w[daisangen], "pao_honba" => "liable")
+      _winner, delta = changes(daisangen_state(false), rule, :ron, loser: 2, honba: 1)
+
+      expect(delta).to eq(2 => -32_300, 1 => 32_300)
+    end
+
     it "包の席からのロンは包の席が全額" do
       _winner, delta = changes(daisangen_state(true), pao_rule, :ron, loser: 0)
 

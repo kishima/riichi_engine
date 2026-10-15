@@ -29,7 +29,8 @@ module Mahjong
       "tenpai_yame" => false,
       "kuikae" => true,
       "riichi_ankan" => false,
-      "kokushi_ankan_chankan" => false
+      "kokushi_ankan_chankan" => false,
+      "pao_honba" => "discarder"
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）

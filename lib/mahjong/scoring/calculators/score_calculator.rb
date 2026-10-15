@@ -21,7 +21,8 @@ module Mahjong
             kyoutaku_bonus: kyoutaku * 1000,
             honba: honba,
             is_yakuman: is_yakuman,
-            pao: pao
+            pao: pao,
+            pao_honba: rule.respond_to?(:pao_honba) ? rule.pao_honba.to_s : "discarder"
           )
         end
 

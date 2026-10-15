@@ -4,7 +4,7 @@ module Mahjong
       class ScoreResult
       # pao: 包（責任払い）の分 [{ seat: 責任を負う席, base_points: その分の基本点 }]。空なら包なし。
       attr_reader :fu, :han, :base_points, :level, :is_oya,
-                  :agari_type, :payments, :total, :kyoutaku_bonus, :honba, :is_yakuman, :pao
+                  :agari_type, :payments, :total, :kyoutaku_bonus, :honba, :is_yakuman, :pao, :pao_honba
 
       def initialize(**attrs)
         @pao = []
@@ -30,7 +30,7 @@ module Mahjong
       end
 
       # 包があれば、包の分はツモなら責任者が全額（積み棒も）、ロンなら放銃者と責任者が
-      # 半分ずつ（積み棒は放銃者）。残りの分はふつうに払う。
+      # 半分ずつ（積み棒は放銃者、pao_honba が "liable" なら責任者）。残りの分はふつうに払う。
       def score_changes(winner_seat:, loser_seat:, oya_seat:)
         return pao_score_changes(winner_seat:, loser_seat:, oya_seat:) if pao.any?
 
@@ -92,7 +92,7 @@ module Mahjong
           pay.call(pao.first[:seat], honba.to_i * 300)
         else
           pay.call(loser_seat, ron_value.call(rest)) if rest.positive?
-          pay.call(loser_seat, honba.to_i * 300)
+          pay.call(pao_honba == "liable" ? pao.first[:seat] : loser_seat, honba.to_i * 300)
         end
 
         changes[winner_seat] += kyoutaku_bonus
