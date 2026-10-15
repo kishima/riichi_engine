@@ -14,7 +14,7 @@ module Mahjong
 
       def remove(tile)
         tile = Tiles::Tile.new(tile) unless tile.is_a?(Tiles::Tile)
-        idx = @tiles.index { |t| t.same_kind?(tile) }
+        idx = @tiles.index { |t| t == tile } || @tiles.index { |t| t.same_kind?(tile) }
         raise Errors::TileNotFoundError, "Tile #{tile} not found in hand" unless idx
 
         self.class.new(@tiles.dup.tap { |a| a.delete_at(idx) })

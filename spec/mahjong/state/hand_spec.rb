@@ -20,6 +20,17 @@ RSpec.describe Mahjong::State::Hand do
       expect(new_hand.include?(tile.("2m"))).to be false
     end
 
+    it "赤五と五があるときは指定どおりの牌を除去する" do
+      hand = described_class.new([tile.("0m"), tile.("5m"), tile.("1p")])
+      expect(hand.remove(tile.("5m")).to_a).to eq(%w[0m 1p])
+      expect(hand.remove(tile.("0m")).to_a).to eq(%w[5m 1p])
+    end
+
+    it "同じ牌が無ければ同じ種類の牌を除去する" do
+      hand = described_class.new([tile.("0m"), tile.("1p")])
+      expect(hand.remove(tile.("5m")).to_a).to eq(%w[1p])
+    end
+
     it "存在しない牌を除去すると TileNotFoundError が発生する" do
       hand = described_class.new([tile.("1m")])
       expect { hand.remove(tile.("9p")) }.to raise_error(Mahjong::Errors::TileNotFoundError)
