@@ -180,6 +180,15 @@ RSpec.describe Mahjong::Flow::Games::GameFlow do
       expect(result.reason).to eq(:tobi)
     end
 
+    it "ちょうど 0 点はトビではない（0 点未満で終了）" do
+      snapshot = build_progress_snapshot(scores: [30_000, 0, 20_000, 50_000])
+      info = Mahjong::Results::RoundEndInfo.new(result_type: :ron, winners: [{ seat: 0 }], tenpai_seats: [])
+
+      result = described_class.judge_next(progress_snapshot: snapshot, round_end_info: info, rule:)
+
+      expect(result).to be_next_round
+    end
+
     it "西入条件を満たす場合は続行する" do
       snapshot = build_progress_snapshot(bakaze: "nan", kyoku: 4, scores: [29_000, 28_000, 22_000, 21_000])
       west_rule = Mahjong::Config::RuleConfig.new("nishi_iri" => true)
