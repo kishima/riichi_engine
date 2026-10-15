@@ -51,6 +51,7 @@ RSpec.describe Mahjong::Tiles::Tile do
       expect(described_class.new("1m").chunchan?).to be false
       expect(described_class.new("9p").chunchan?).to be false
       expect(described_class.new("1z").chunchan?).to be false
+      expect(described_class.new("0m").chunchan?).to be true
     end
 
     it "sangenpai? が正しく動作する" do
