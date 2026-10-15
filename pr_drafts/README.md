@@ -3,7 +3,7 @@
 `fix/*`・`feat/*` のブランチごとに 1 つ。上流へのプルリクエストは日本語で出す（上流の作者が日本語で書くため）。
 どの下書きも日本語。
 
-ブランチはどれも `main`（v0.1.0）から作り、それぞれに修正前に落ちて修正後に通る spec を持つ。表の「土台」に
+ブランチはどれも `main`（v0.1.0）から作り、それぞれに修正前に落ちて修正後に通る spec を持つ（`test/karaten-tenpai` は今の動きを固定する spec だけ）。表の「土台」に
 ほかのブランチを書いたものは、その上に作ってある（先にそちらを入れる）。それ以外は互いに依存せず、どの順でも
 出せる。隣り合う行を触るもの（下に書く）は、後に入れる方に小さな rebase が要る。
 
@@ -45,6 +45,8 @@
 | `feat/pao-honba` | [feat-pao-honba.md](feat-pao-honba.md) | `feat/pao` | scoring/evaluators/pao_spec.rb |
 | `feat/tenhou-best-tile` | [feat-tenhou-best-tile.md](feat-tenhou-best-tile.md) | `feat/double-yakuman` | scoring/evaluators/tenhou_best_tile_spec.rb（新規） |
 | `feat/sudden-death` | [feat-sudden-death.md](feat-sudden-death.md) | `feat/agari-yame` | game_flow_spec.rb |
+| `fix/dojun-furiten-no-yaku` | [fix-dojun-furiten-no-yaku.md](fix-dojun-furiten-no-yaku.md) | | flow/rounds/dojun_furiten_spec.rb（新規） |
+| `test/karaten-tenpai` | [test-karaten-tenpai.md](test-karaten-tenpai.md) | | scoring/judges/karaten_spec.rb（新規、spec だけ） |
 
 ## 隣り合う変更（先に入った方の後で rebase が要る）
 
@@ -67,6 +69,8 @@
   `feat/kan-dora-after-discard`（`rule:` を渡す）と隣り合う。
 - `feat/riichi-ankan` は `available_actions` の暗槓の候補を出すところを触る（`fix/riichi-discard` の近く）。
 - `feat/sudden-death` は `GameFlow.should_end_game?` を触る（`fix/unknown-game-type` の `else` と隣り合う）。
+- `fix/dojun-furiten-no-yaku` は `process_dahai` の鳴きの検出の直後に 1 行と、`process_skip` の後に private の補助メソッドを足す
+  （`feat/abortive-draws` の途中流局の判定の直前）。
 - `RoundState` の属性・`to_json`・`from_json` の末尾には `feat/pao`（`pao_seats`）と `feat/kan-dora-after-discard`
   （`pending_kan_dora`）が足す。
 - `round_flow.rb` の `process_dahai`・`process_skip`・`advance_turn` の前後は、`fix/first-turn-flags`・
@@ -96,6 +100,8 @@
   （`tenhou_best_tile`）・東風戦の南入（`nan_iri`）・サドンデス（`sudden_death`）は既定でなし。包のロンの積み棒は既定で
   放銃者（`pao_honba`）。
 - 延長戦（`nishi_iri`・`nan_iri`）のあるルールでは、アガリ止め・テンパイ止めに基準点が要る（`feat/sudden-death`）。
+- 同巡内フリテンは待ちで決める。役が無くてロンの候補が出ない待ちの牌の見逃しも同巡内フリテン（`fix/dojun-furiten-no-yaku`）。
+- 形式聴牌は手の内に 4 枚ある牌の単騎だけを除く。ポンした牌の 4 枚目の単騎は聴牌（`test/karaten-tenpai`）。
 
 gemspec はすでに `spec.license = "MIT"` を持つ（公開された 0.1.0 も同じ）ので変えるものは無い。
 
@@ -103,8 +109,5 @@ gemspec はすでに `spec.license = "MIT"` を持つ（公開された 0.1.0 �
 
 - リーチの宣言牌がロンされたとき、リーチ棒を戻す（リーチ不成立）扱いが無い（`process_riichi` が宣言の時点で 1000 点を払う）。
 - normal・hard の CPU は役の有無を見ずに鳴く（向聴が下がれば鳴く）ので、役の無い鳴き手で和了れない局がある。
-- 役の無い聴牌でアガリ牌を見逃したときの同巡フリテン: 見逃しの判定はロンの候補が出た席（役のある席）だけで、
-  役が無くてロンの出ない席はフリテンにならない。
-- 副露している牌と同じ牌の単騎（ポンした牌の 4 枚目待ち）はテンパイとして数える（手の内に 4 枚ある単騎だけを除く）。
 - easy の CPU は、向聴数を保つ打牌のうち么九牌を先に、受け入れの少ない方を切る。合法で向聴は落とさないので、
   弱くしてある作りとしてそのままにした。
