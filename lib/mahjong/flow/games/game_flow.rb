@@ -99,6 +99,24 @@ module Mahjong
       changes
     end
 
+    # 流し満貫の支払い。成立した席ごとに満貫のツモ和了と同じ額（親 4000 オール、
+    # 子 2000/4000）を受け取る。本場は付かない。ノーテン罰符の代わりに使う。
+    def self.calculate_nagashi_mangan_payments(nagashi_seats, oya_seat:)
+      changes = { 0 => 0, 1 => 0, 2 => 0, 3 => 0 }
+
+      Array(nagashi_seats).each do |winner|
+        4.times do |seat|
+          next if seat == winner
+
+          pay = winner == oya_seat || seat == oya_seat ? 4000 : 2000
+          changes[seat] -= pay
+          changes[winner] += pay
+        end
+      end
+
+      changes
+    end
+
     def self.renchan?(progress_snapshot, round_end_info)
       case round_end_info.result_type
       when :tsumo_agari, :ron_agari, :tsumo, :ron

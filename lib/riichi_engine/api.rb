@@ -35,6 +35,10 @@ module RiichiEngine
       Mahjong::Flow::Games::GameFlow.calculate_tenpai_payments(tenpai_seats)
     end
 
+    def self.calculate_nagashi_mangan_payments(nagashi_seats, oya_seat:)
+      Mahjong::Flow::Games::GameFlow.calculate_nagashi_mangan_payments(nagashi_seats, oya_seat:)
+    end
+
     def self.tenpai_seats(state)
       4.times.select { |seat| Mahjong::Scoring::Judges::MachiJudge.tenpai?(state.hands[seat].to_34) }
     end
