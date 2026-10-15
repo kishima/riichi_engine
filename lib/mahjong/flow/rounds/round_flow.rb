@@ -525,6 +525,8 @@ module Mahjong
       state.chankan_tile = open_kan ? tile : nil
       state.wanpai.reveal_new_dora!
       state.dora_hyouji = state.wanpai.dora_hyouji.dup
+      # 槓裏も同時に増える（和了の評価は RoundState#uradora_hyouji を読む）
+      state.uradora_hyouji = state.wanpai.uradora_hyouji.dup
       rinshan_tile = state.wanpai.draw_rinshan!
       state.hands[seat] = state.hands[seat].add(rinshan_tile)
       state.last_tsumo = rinshan_tile
