@@ -33,7 +33,8 @@ module Mahjong
       "pao_honba" => "discarder",
       "tenhou_best_tile" => false,
       "nan_iri" => false,
-      "sudden_death" => false
+      "sudden_death" => false,
+      "riichi_void_on_ron" => false
     }.freeze
 
     # game_type に使える値（"tonpuusen" は "tonpuu" と同じ）

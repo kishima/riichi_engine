@@ -56,6 +56,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `tenhou_best_tile` | Boolean | `false` | 天和では、手のどの牌を和了牌と見ても最も高い点になる牌を和了牌とする（偽なら自摸った牌） |
 | `nan_iri` | Boolean | `false` | 東風戦の南入あり（東4局の後に誰も `nishi_iri_threshold` に届いていなければ南場へ。東風戦は西場には入らない） |
 | `sudden_death` | Boolean | `false` | 延長戦（半荘の西場・東風戦の南場）をサドンデスにする。誰かが `nishi_iri_threshold` 以上になった局の後に終わり（理由 `:sudden_death`。ただし親を含む複数人のロンで親が連荘するときは、延長戦の 4 局目のアガリ止めより先に続ける）、延長は 1 つの場だけ（その場の 4 局の後に終わる） |
+| `riichi_void_on_ron` | Boolean | `false` | リーチの宣言牌がロンされたら、そのリーチは不成立（1000 点を戻し、供託に入れない） |
 
 ### Snapshots
 
