@@ -58,4 +58,27 @@ RSpec.describe Mahjong::Cpu::Selectors::DahaiSelector do
 
     expect(described_class.select(hand:, state:, level: 2, seat: 0)).to eq("6p")
   end
+
+  it "鳴いた手は役の筋に沿って切る（断么九の筋なら么九牌を切る）" do
+    # 555m のポン＋ 23m 34p 234s 77p 8p 9p: 何を切っても 1 向聴の牌は複数あるが、
+    # 断么九で数えて 1 向聴のままなのは 9p を切るときだけ。
+    state = build_state
+    state.menzen_flags[0] = false
+    state.fuuros[0] = [Mahjong::State::Fuuro.new(type: :pon, tiles: tiles("5m 5m 5m"), called_tile: Mahjong::Tiles::Tile.new("5m"), from_seat: 1)]
+    hand = Mahjong::State::Hand.new(tiles("2m 3m 3p 4p 2s 3s 4s 7p 7p 8p 9p"))
+
+    expect(described_class.select(hand:, state:, level: 2, seat: 0)).to eq("9p")
+    expect(described_class.select(hand:, state:, level: 3, seat: 0)).to eq("9p")
+  end
+
+  it "鳴いた手は、断么九の無いテンパイより筋に沿った 1 向聴を取る" do
+    # 234p のチー＋ 45m 123s 567s 88m 9p: 9p を切ればテンパイ（3m・6m 待ち）だが 123s があって役が無い。
+    # 断么九で数えるとどちらを切っても 1 向聴なので、通常の数え方でも 1 向聴になる 1s を切る。
+    state = build_state
+    state.menzen_flags[0] = false
+    state.fuuros[0] = [Mahjong::State::Fuuro.new(type: :chi, tiles: tiles("2p 3p 4p"), called_tile: Mahjong::Tiles::Tile.new("2p"), from_seat: 3)]
+    hand = Mahjong::State::Hand.new(tiles("4m 5m 1s 2s 3s 5s 6s 7s 8m 8m 9p"))
+
+    expect(described_class.select(hand:, state:, level: 2, seat: 0)).to eq("1s")
+  end
 end

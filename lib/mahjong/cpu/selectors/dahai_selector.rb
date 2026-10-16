@@ -3,17 +3,33 @@ module Mahjong
     module Selectors
       class DahaiSelector
       # seat: 手の持ち主（省略すると手番の席）。その席の副露を面子として数える。
-      def self.select(hand:, state:, level:, seat: state.current_seat)
+      # rule: 喰い断の有無を見る（省略すると喰い断あり）。
+      def self.select(hand:, state:, level:, seat: state.current_seat, rule: nil)
         visible = collect_visible_tiles(state)
         melds = Array(state.fuuros && state.fuuros[seat]).size
         evals = Analysis::TileEvaluator.evaluate_all_discards(hand, visible_tiles: visible, melds: melds)
 
         case level
         when 1 then select_easy(evals, hand)
-        when 2 then select_normal(evals, hand, state)
-        when 3 then select_hard(evals, hand, state)
-        else select_normal(evals, hand, state)
+        when 3 then select_hard(evals, hand, state, on_yaku_plan(evals, hand, state, seat, melds, rule))
+        else select_normal(on_yaku_plan(evals, hand, state, seat, melds, rule), hand, state)
         end
+      end
+
+      # 鳴いた手では、役の筋（Analysis::YakuPlan）に沿った向聴数がいちばん小さくなる打牌だけを残す。
+      # そのうち通常の向聴数が筋の向聴数と同じ打牌があれば、それだけにする（通常の数え方でだけ進んで見える
+      # 打牌、たとえば么九牌を雀頭にした断么九の無いテンパイを取らない）。門前の手と、筋の残っていない手はそのまま。
+      private_class_method def self.on_yaku_plan(evals, hand, state, seat, melds, rule)
+        plans = Analysis::YakuPlan.seat_plans(state, seat, rule)
+        return evals if plans.nil? || plans.empty?
+
+        planned = evals.to_h do |tile_str, result|
+          [tile_str, Analysis::YakuPlan.best_shanten(plans, hand.remove(Tiles::Tile.new(tile_str)).to_34, melds)]
+        end
+        best = planned.values.min
+        kept = evals.select { |tile_str, _| planned[tile_str] == best }
+        on_plan = kept.select { |_, result| result.shanten == best }
+        on_plan.empty? ? kept : on_plan
       end
 
       private_class_method def self.select_easy(evals, hand)
@@ -47,14 +63,15 @@ module Mahjong
         sorted.first&.first || hand.tiles.last.to_s
       end
 
-      private_class_method def self.select_hard(evals, hand, state)
+      # planned: 役の筋に沿った打牌（on_yaku_plan）。守りに回るときは筋を見ない。
+      private_class_method def self.select_hard(evals, hand, state, planned = evals)
         min_shanten = evals.values.map(&:shanten).min
-        return select_normal(evals, hand, state) if min_shanten <= 1
+        return select_normal(planned, hand, state) if min_shanten <= 1
 
         riichi_seats = (0..3).select { |seat| state.riichi_flags[seat] && seat != state.current_seat }
         return select_defensive(evals, hand, state, riichi_seats) if riichi_seats.any?
 
-        select_normal(evals, hand, state)
+        select_normal(planned, hand, state)
       end
 
       private_class_method def self.select_defensive(evals, hand, state, riichi_seats)
