@@ -69,4 +69,47 @@ RSpec.describe Mahjong::Cpu::Judges::NakiJudge do
 
     expect(described_class.judge(naki_options: options, state:, seat: 1, level: 2)).to eq(type: :chi, tiles: %w[6p 7p])
   end
+
+  describe "役の筋" do
+    it "鳴いた後に役の筋が無い鳴きは、向聴が下がってもしない" do
+      # 2 向聴。1p を 2p 3p でチーすると 1 向聴になるが、123p で断么九が消え、混一色も対々和も無い
+      state = build_state("2p 3p 5m 6m 7m 4s 6s 9s 9s 3z 3z 3m 1s")
+      state.last_dahai = { seat: 0, tile: Mahjong::Tiles::Tile.new("1p") }
+      options = [{ type: :chi, tiles: %w[2p 3p] }]
+
+      expect(described_class.judge(naki_options: options, state:, seat: 1, level: 2)).to be_nil
+      expect(described_class.judge(naki_options: options, state:, seat: 1, level: 3)).to be_nil
+    end
+
+    it "断么九の筋は喰い断があるときだけ" do
+      # 5m のポンで、么九牌を切っていけば断么九（2 向聴）。喰い断が無ければ筋が無い（混一色も対々和も遠い）。
+      state = build_state("1m 9m 5m 5m 2p 3p 4p 6s 7s 8s 1z 2z 3z")
+      state.last_dahai = { seat: 0, tile: Mahjong::Tiles::Tile.new("5m") }
+      options = [{ type: :pon, tiles: %w[5m 5m] }]
+
+      expect(described_class.judge(naki_options: options, state:, seat: 1, level: 2,
+                                   rule: Mahjong::Config::RuleConfig.new("kuitan" => true))).to eq(type: :pon, tiles: %w[5m 5m])
+      expect(described_class.judge(naki_options: options, state:, seat: 1, level: 2,
+                                   rule: Mahjong::Config::RuleConfig.new("kuitan" => false))).to be_nil
+    end
+
+    it "役牌の刻子があれば筋は役牌（どの形でも役がある）" do
+      state = build_state("2m 3m 6p 7p 1s 1s 8s 2z 4z 6z")
+      state.menzen_flags[1] = false
+      state.fuuros[1] = [Mahjong::State::Fuuro.new(type: :pon, tiles: tiles("5z 5z 5z"), called_tile: Mahjong::Tiles::Tile.new("5z"), from_seat: 0)]
+      state.last_dahai = { seat: 0, tile: Mahjong::Tiles::Tile.new("8p") }
+      options = [{ type: :chi, tiles: %w[6p 7p] }]
+
+      expect(described_class.judge(naki_options: options, state:, seat: 1, level: 2)).to eq(type: :chi, tiles: %w[6p 7p])
+    end
+
+    it "チーの組が複数あれば、筋の残る組を選ぶ" do
+      # 3p のチー。1p 2p（123p）では断么九が消え、混一色も遠い。2p 4p（234p）なら断么九で 1 向聴（今は 2 向聴）。
+      state = build_state("1p 2p 4p 6m 7m 8m 3s 4s 5s 6p 6p 9m 1z")
+      state.last_dahai = { seat: 0, tile: Mahjong::Tiles::Tile.new("3p") }
+      options = [{ type: :chi, choices: [%w[1p 2p], %w[2p 4p]] }]
+
+      expect(described_class.judge(naki_options: options, state:, seat: 1, level: 2)).to eq(type: :chi, tiles: %w[2p 4p])
+    end
+  end
 end

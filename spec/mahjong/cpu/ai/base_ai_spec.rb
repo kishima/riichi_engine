@@ -68,4 +68,24 @@ RSpec.describe Mahjong::Cpu::Ai::BaseAi do
 
     expect(easy.think(state:, seat: 0, available:, rule:)).to eq(type: :riichi, tile: "6z").or eq(type: :riichi, tile: "7z")
   end
+
+  it "鳴いた手では、役の筋が消える暗槓はしない（断么九の手で 9m の暗槓）" do
+    allow(Mahjong::Cpu::Judges::RiichiJudge).to receive(:should_riichi?).and_return(false)
+    state.menzen_flags[0] = false
+    state.fuuros[0] = [Mahjong::State::Fuuro.new(type: :chi, tiles: tiles("2p 3p 4p"), called_tile: Mahjong::Tiles::Tile.new("2p"), from_seat: 3)]
+    state.hands[0] = Mahjong::State::Hand.new(tiles("9m 9m 9m 9m 3s 4s 5s 6s 7s 5p 5p"))
+    available = [{ type: :ankan, tile: "9m" }, { type: :dahai, tile: "9m" }, { type: :dahai, tile: "7s" }]
+
+    expect(ai.think(state:, seat: 0, available:, rule:)[:type]).to eq(:dahai)
+  end
+
+  it "鳴いた手でも、役の筋が残る暗槓はする" do
+    allow(Mahjong::Cpu::Judges::RiichiJudge).to receive(:should_riichi?).and_return(false)
+    state.menzen_flags[0] = false
+    state.fuuros[0] = [Mahjong::State::Fuuro.new(type: :chi, tiles: tiles("2p 3p 4p"), called_tile: Mahjong::Tiles::Tile.new("2p"), from_seat: 3)]
+    state.hands[0] = Mahjong::State::Hand.new(tiles("6m 6m 6m 6m 3s 4s 5s 6s 7s 5p 5p"))
+    available = [{ type: :ankan, tile: "6m" }, { type: :dahai, tile: "6m" }]
+
+    expect(ai.think(state:, seat: 0, available:, rule:)).to eq(type: :ankan, tile: "6m")
+  end
 end
