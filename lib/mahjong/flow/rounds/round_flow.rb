@@ -344,8 +344,9 @@ module Mahjong
 
     # seats: があれば全員の和了（ダブロン）。winners は放銃者の下家から順に並び、
     # 先頭（頭はねなら和了る席）が winner_seat。
-    def self.process_ron_agari(state, action, _rule)
+    def self.process_ron_agari(state, action, rule)
       from = state.last_dahai[:seat]
+      void_declared_riichi(state, from) if rule&.riichi_void_on_ron?
       seats = Array(action[:seats] || action[:seat]).uniq.sort_by { |seat| (seat - from) % 4 }
       state.phase = :round_end
       set_round_end_info(
@@ -360,6 +361,24 @@ module Mahjong
 
       seats.map { |seat| { type: :ron_agari, seat: seat, from: from } }
     end
+
+    # リーチの宣言牌へのロン（ルール riichi_void_on_ron）: そのリーチは成り立たない。
+    # 宣言のときに払った 1000 点を戻し、供託から 1 本を除き、リーチ・ダブル立直・一発の印を消す。
+    # 宣言牌が鳴かれた（ロンされずに通った）ときと、槍槓は対象外。
+    def self.void_declared_riichi(state, seat)
+      return if state.chankan_tile
+
+      declared = state.kawas[seat].tiles.last
+      return unless declared&.riichi && !declared.called && state.riichi_flags[seat]
+
+      state.scores[seat] += 1000
+      state.kyoutaku -= 1
+      state.riichi_flags[seat] = false
+      state.double_riichi_flags[seat] = false
+      state.ippatsu_flags[seat] = false
+      state.riichi_junme[seat] = nil
+    end
+    private_class_method :void_declared_riichi
 
     # 三家和: 3 人がロンを宣言した局は流局（途中流局）。
     def self.process_sanchahou(state, action, _rule)

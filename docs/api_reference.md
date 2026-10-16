@@ -40,6 +40,7 @@ rule = Mahjong::Config::RuleConfig.new("kuitan" => false)  # 食い断なし
 | `nishi_iri` | Boolean | `false` | 西入あり |
 | `nishi_iri_threshold` | Integer | `30000` | 西入の基準点 |
 | `renpuu_jantou_fu` | Integer | `2` | 連風牌を雀頭にしたときの符 |
+| `riichi_void_on_ron` | Boolean | `false` | リーチの宣言牌がロンされたら、そのリーチは不成立（1000 点を戻し、供託に入れない） |
 
 ### Snapshots
 
