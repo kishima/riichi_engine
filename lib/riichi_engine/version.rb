@@ -1,3 +1,3 @@
 module RiichiEngine
-  VERSION = "0.1.1.fmrb5"
+  VERSION = "0.1.1.fmrb6"
 end

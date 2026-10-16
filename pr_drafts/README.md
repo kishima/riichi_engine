@@ -47,6 +47,8 @@
 | `feat/sudden-death` | [feat-sudden-death.md](feat-sudden-death.md) | `feat/agari-yame` | game_flow_spec.rb |
 | `fix/dojun-furiten-no-yaku` | [fix-dojun-furiten-no-yaku.md](fix-dojun-furiten-no-yaku.md) | | flow/rounds/dojun_furiten_spec.rb（新規） |
 | `test/karaten-tenpai` | [test-karaten-tenpai.md](test-karaten-tenpai.md) | | scoring/judges/karaten_spec.rb（新規、spec だけ） |
+| `feat/riichi-void-on-ron` | [feat-riichi-void-on-ron.md](feat-riichi-void-on-ron.md) | `fix/multiple-ron` | flow/rounds/riichi_declaration_ron_spec.rb（新規） |
+| `fix/cpu-yaku-calls` | [fix-cpu-yaku-calls.md](fix-cpu-yaku-calls.md) | `fix/shanten-melds` | cpu/analysis/yaku_plan_spec.rb（新規）, cpu/judges/naki_judge_spec.rb, cpu/selectors/dahai_selector_spec.rb, cpu/ai/base_ai_spec.rb |
 
 ## 隣り合う変更（先に入った方の後で rebase が要る）
 
@@ -71,6 +73,11 @@
 - `feat/sudden-death` は `GameFlow.should_end_game?` を触る（`fix/unknown-game-type` の `else` と隣り合う）。
 - `fix/dojun-furiten-no-yaku` は `process_dahai` の鳴きの検出の直後に 1 行と、`process_skip` の後に private の補助メソッドを足す
   （`feat/abortive-draws` の途中流局の判定の直前）。
+- `feat/riichi-void-on-ron` は `process_ron_agari` の先頭に 1 行と、その後に private の補助メソッドを足す。`RuleConfig::DEFAULTS` の
+  末尾のキーは、ほかの `feat/*` と同じくカンマを足すだけ。
+- `fix/cpu-yaku-calls` は `BaseAi#think_dahai` の最後の行（`DahaiSelector.select` に `rule:`）と `should_ankan?`、
+  `DahaiSelector.select` の引数を触る。`feat/kuikae` と両方入れると `select(..., seat:, allowed:, rule:)`。
+  `fix/cpu-discard-ukeire`・`fix/cpu-riichi` とも同じ近くの行。
 - `RoundState` の属性・`to_json`・`from_json` の末尾には `feat/pao`（`pao_seats`）と `feat/kan-dora-after-discard`
   （`pending_kan_dora`）が足す。
 - `round_flow.rb` の `process_dahai`・`process_skip`・`advance_turn` の前後は、`fix/first-turn-flags`・
@@ -102,12 +109,12 @@
 - 延長戦（`nishi_iri`・`nan_iri`）のあるルールでは、アガリ止め・テンパイ止めに基準点が要る（`feat/sudden-death`）。
 - 同巡内フリテンは待ちで決める。役が無くてロンの候補が出ない待ちの牌の見逃しも同巡内フリテン（`fix/dojun-furiten-no-yaku`）。
 - 形式聴牌は手の内に 4 枚ある牌の単騎だけを除く。ポンした牌の 4 枚目の単騎は聴牌（`test/karaten-tenpai`）。
+- リーチの宣言牌へのロンでリーチを不成立にする（1000 点を戻す）のは `riichi_void_on_ron`。既定は宣言の時点で成り立つ
+  （0.1.0 の動き）。宣言牌が鳴かれればリーチは成り立つ。三家和の流局では 1000 点は供託に残る（`feat/riichi-void-on-ron`）。
 
 gemspec はすでに `spec.license = "MIT"` を持つ（公開された 0.1.0 も同じ）ので変えるものは無い。
 
 ## まだ扱っていないもの（見つけたが後回し）
 
-- リーチの宣言牌がロンされたとき、リーチ棒を戻す（リーチ不成立）扱いが無い（`process_riichi` が宣言の時点で 1000 点を払う）。
-- normal・hard の CPU は役の有無を見ずに鳴く（向聴が下がれば鳴く）ので、役の無い鳴き手で和了れない局がある。
 - easy の CPU は、向聴数を保つ打牌のうち么九牌を先に、受け入れの少ない方を切る。合法で向聴は落とさないので、
   弱くしてある作りとしてそのままにした。
